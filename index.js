@@ -7,8 +7,6 @@ import { addDipCount, getDips } from './src/vibin/dips.js';
 
 dotenv.config();
 
-// const getPersonMessage = require('./src/person_message');
-
 const COMMANDS = [
   'bpm',
   'key',
@@ -38,22 +36,22 @@ client.on('messageCreate', async (message) => {
   //   // get last message of justin (justinxls)
   //   return message.channel.send(await getPersonMessage(message, 'justinxls', 'MEAT NOW!'));
   // }
-  
+
   const isVibinDip = await addDipCount(message);
   if (isVibinDip) return; // don't process the rest of the code if it's a vibin dip
-  
+
   const isDeedgeMessage = await sendDeedgeMessage(message);
   if (isDeedgeMessage) return; // don't process the rest of the code if it's a deedge message
-  
+
   if (message.author.bot) return;
   if (message.content[0] !== '>') return; 
-  
+
   const content = message.content.slice(1).toLowerCase().split(' ');
   const [command, ...args] = content;
   if (!COMMANDS.includes(command)) return;
-  
-  if (command === 'vibindips') return getDips();
-  
+
+  if (command === 'vibindips') return getDips(message);
+
   if (!args || args.length === 0) {
     // get current spotify song playing
     const currentSong = message.member.presence.activities.find((activity) => activity.name === 'Spotify');

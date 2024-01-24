@@ -2,7 +2,7 @@ const spamUsername = 'deedgemaster';
 const firstMessageLine = spamUsername + ' says:';
 const firstMessageLineBreak = firstMessageLine + '\n';
 
-export const getReplyContent = (skipFirstLine = false) => ({
+export const getReplyContent = (message, skipFirstLine = false) => ({
   content: `${skipFirstLine ? '' : firstMessageLineBreak}${message.content}`,
   files: message.attachments.map((attachment) => attachment.url),
   stickers: message.stickers.map((sticker) => sticker.id),
@@ -22,9 +22,9 @@ export const sendDeedgeMessage = async (message) => {
 
       // send last message of spamUsername flagged as spam
       if (message.reference) {
-        message.channel.messages.fetch(message.reference.messageId).then((msgToReply) => msgToReply.reply(getReplyContent()));
+        message.channel.messages.fetch(message.reference.messageId).then((msgToReply) => msgToReply.reply(getReplyContent(message)));
       } else {
-        message.channel.send(getReplyContent(isUserBotContinuity));
+        message.channel.send(getReplyContent(message, isUserBotContinuity));
       }
 
       // delete previous message from spamUsername

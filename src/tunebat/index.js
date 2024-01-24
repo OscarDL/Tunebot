@@ -42,7 +42,7 @@ export const getTunebatSong = async (message, command, searchTerm) => {
     }
 
     case 'pop': {
-      await message.reply(`${trackText} has a popularity score of **${popularity}/100** on Spotify.`);
+      await message.reply(`${trackText} has a popularity score of **${popularity}%** on Spotify.`);
       break;
     }
 
