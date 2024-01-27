@@ -14,7 +14,6 @@ const COMMANDS = [
   'info',
   'pop',
   'vibindips',
-  // 'timezone',
 ];
 
 const client = new Client({
@@ -32,9 +31,11 @@ client.on('ready', () => {
 });
 
 client.on('messageCreate', async (message) => {
-  // if (message.content.toLowerCase() === 'justin') {
-  //   // get last message of justin (justinxls)
-  //   return message.channel.send(await getPersonMessage(message, 'justinxls', 'MEAT NOW!'));
+  // const username = 'xxx';
+  // const text = 'yyy';
+  // if (message.content.toLowerCase() === username) {
+  //   // get last message of username
+  //   return message.channel.send(await getPersonMessage(message, username, text));
   // }
 
   const isVibinDip = await addDipCount(message);
@@ -60,7 +61,7 @@ client.on('messageCreate', async (message) => {
     }
 
     const {details: title, state: artists} = currentSong;
-    return await getTunebatSong(message, command, [artists.replace(';', ' '), title]);
+    return await getTunebatSong(message, command, [artists.replace(/[;&]/g, ' '), title]);
   }
 
   return await getTunebatSong(message, command, args);
