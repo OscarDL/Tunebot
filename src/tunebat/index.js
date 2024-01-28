@@ -1,14 +1,13 @@
 import fetch from 'node-fetch';
 
-export const getTunebatSong = async (message, command, searchTerm) => {
+export const getTunebatSong = async (command, searchTerm) => {
   const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${searchTerm.join('%20')}`);
   const json = await res.json();
 
   const track = json.data.items[0];
 
   if (!track) {
-    await message.reply('No results found.');
-    return;
+    return 'No results found.';
   }
 
   const {b: bpm, k: key, c: camelot, d: duration, p: popularity} = track;
@@ -16,34 +15,29 @@ export const getTunebatSong = async (message, command, searchTerm) => {
 
   switch (command) {
     case 'bpm': {
-      await message.reply(`${trackText} has **${bpm} BPM**.`);
-      break;
+      return `${trackText} has **${bpm} BPM**.`;
     }
 
     case 'key': {
-      await message.reply(`${trackText} is using **${key}** (${camelot}).`);
-      break;
+      return `${trackText} is using **${key}** (${camelot}).`;
     }
 
     case 'duration': {
       const length = duration / 1000;
       const minutes = Math.floor(length / 60);
       const seconds = Math.floor(length % 60);
-      await message.reply(`${trackText} lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`);
-      break;
+      return `${trackText} lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`;
     }
 
     case 'info': {
       const length = duration / 1000;
       const minutes = Math.floor(length / 60);
       const seconds = Math.floor(length % 60);
-      await message.reply(`${trackText} has **${bpm} BPM**, is **${key}** (${camelot}), and lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`);
-      break;
+      return `${trackText} has **${bpm} BPM**, is **${key}** (${camelot}), and lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`;
     }
 
     case 'pop': {
-      await message.reply(`${trackText} has a popularity score of **${popularity}%** on Spotify.`);
-      break;
+      return `${trackText} has a popularity score of **${popularity}%** on Spotify.`;
     }
 
     default:

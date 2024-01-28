@@ -61,10 +61,17 @@ client.on('messageCreate', async (message) => {
     }
 
     const {details: title, state: artists} = currentSong;
-    return await getTunebatSong(message, command, [artists.replace(/[;&]/g, ' '), title]);
+    return await message.reply(getTunebatSong(command, [artists.replace(/[;&]/g, ' '), title]));
   }
 
-  return await getTunebatSong(message, command, args);
+  let reply = [];
+  const requests = args.join(' ').split(',');
+
+  for (const request of requests) {
+    reply.push(await getTunebatSong(command, [request]));
+  };
+
+  return await message.reply(reply.join('\n'));
 });
 
 client.login(process.env.TOKEN);
