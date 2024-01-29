@@ -11,10 +11,15 @@ export const getTunebatSong = async (command, searchTerm) => {
     return 'No results found.';
   }
 
-  const {b: bpm, k: key, c: camelot, d: duration, p: popularity} = track;
+  const {b: bpm, k: key, c: camelot, d: duration, p: popularity, id} = track;
   const trackText = `**${track.n}** by ${track.as.join(', ')}`;
 
   switch (command) {
+    case 's':
+    case 'np': {
+      return `https://open.spotify.com/track/${id}`;
+    }
+
     case 'bpm': {
       return `${trackText} has **${bpm} BPM**.`;
     }

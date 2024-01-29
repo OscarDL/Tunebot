@@ -8,6 +8,8 @@ import { addDipCount, getDips } from './src/vibin/dips.js';
 dotenv.config();
 
 const COMMANDS = [
+  's',
+  'np',
   'bpm',
   'key',
   'duration',
