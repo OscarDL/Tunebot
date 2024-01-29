@@ -61,7 +61,7 @@ client.on('messageCreate', async (message) => {
     }
 
     const {details: title, state: artists} = currentSong;
-    return await message.reply(getTunebatSong(command, [artists.replace(/[;&]/g, ' '), title]));
+    return await message.reply(await getTunebatSong(command, [artists, title]));
   }
 
   let reply = [];
