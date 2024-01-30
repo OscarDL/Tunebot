@@ -1,4 +1,8 @@
-const spamUsername = 'deedgemaster';
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+const spamUsername = process.env.SPAM_USERNAME;
 const firstMessageLine = spamUsername + ' says:';
 const firstMessageLineBreak = firstMessageLine + '\n';
 
@@ -22,17 +26,18 @@ export const sendDeedgeMessage = async (message) => {
 
       // send last message of spamUsername flagged as spam
       if (message.reference) {
-        message.channel.messages.fetch(message.reference.messageId).then((msgToReply) => msgToReply.reply(getReplyContent(message)));
+        await message.channel.messages.fetch(message.reference.messageId).then((msgToReply) => msgToReply.reply(getReplyContent(message)));
       } else {
-        message.channel.send(getReplyContent(message, isUserBotContinuity));
+        await message.channel.send(getReplyContent(message, isUserBotContinuity));
       }
 
       // delete previous message from spamUsername
       await message.delete();
+      return true;
     } catch (e) {
       console.error(e);
     }
-
-    return undefined;
   }
+
+  return false;
 }

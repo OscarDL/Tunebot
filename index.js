@@ -53,7 +53,7 @@ client.on('messageCreate', async (message) => {
   const [command, ...args] = content;
   if (!COMMANDS.includes(command)) return;
 
-  if (command === 'vibindips') return getDips(message);
+  if (command === 'vibindips') return await getDips(message);
 
   if (!args || args.length === 0) {
     // get current spotify song playing
