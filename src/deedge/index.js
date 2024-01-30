@@ -28,7 +28,12 @@ export const sendDeedgeMessage = async (message) => {
       if (message.reference) {
         await message.channel.messages.fetch(message.reference.messageId).then((msgToReply) => msgToReply.reply(getReplyContent(message)));
       } else {
-        await message.channel.send(getReplyContent(message, isUserBotContinuity));
+        if (message.content.length > (2000 - firstMessageLineBreak.length)) {
+          await message.channel.send(firstMessageLine);
+          await message.channel.send(message.content);
+        } else {
+          await message.channel.send(getReplyContent(message, isUserBotContinuity));
+        }
       }
 
       // delete previous message from spamUsername
