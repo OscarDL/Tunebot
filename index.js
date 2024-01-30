@@ -34,6 +34,12 @@ const client = new Client({
   ],
 });
 
+const isMessageCommand = (message) => PREFIXES.includes(message.content[0]);
+
+
+// --- CLIENT EVENTS --- //
+
+
 client.on('ready', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
@@ -49,11 +55,13 @@ client.on('messageCreate', async (message) => {
   const isVibinDip = await addDipCount(message);
   if (isVibinDip) return; // don't process the rest of the code if it's a vibin dip
 
-  const isDeedgeMessage = await sendDeedgeMessage(message);
-  if (isDeedgeMessage) return; // don't process the rest of the code if it's a deedge message
+  if (!isMessageCommand(message)) {
+    const isDeedgeMessage = await sendDeedgeMessage(message);
+    if (isDeedgeMessage) return; // don't process the rest of the code if it's a deedge message
+  }
 
   if (message.author.bot) return;
-  if (!PREFIXES.includes(message.content[0])) return; 
+  if (!isMessageCommand(message)) return;
 
   const content = message.content.slice(1).toLowerCase().split(' ');
   const [command, ...args] = content;
