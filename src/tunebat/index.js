@@ -21,11 +21,11 @@ export const getTunebatSong = async (command, searchTerm) => {
     }
 
     case 'bpm': {
-      return `${trackText} has **${bpm} BPM**.`;
+      return `${trackText} is **${bpm} BPM**.`;
     }
 
     case 'key': {
-      return `${trackText} is using **${key}** (${camelot}).`;
+      return `${trackText} is written in **${key}** (${camelot}).`;
     }
 
     case 'duration': {
@@ -39,7 +39,7 @@ export const getTunebatSong = async (command, searchTerm) => {
       const length = duration / 1000;
       const minutes = Math.floor(length / 60);
       const seconds = Math.floor(length % 60);
-      return `${trackText} has **${bpm} BPM**, is **${key}** (${camelot}), and lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`;
+      return `${trackText} is **${bpm} BPM**, is written in **${key}** (${camelot}), and lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`;
     }
 
     case 'pop': {
