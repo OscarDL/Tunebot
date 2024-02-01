@@ -8,6 +8,9 @@ export const getTunebatSong = async (command, searchTerm) => {
   const track = json.data.items[0];
 
   if (!track) {
+    console.warn(searchTerm);
+    console.warn(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm.join('%20')}`);
+    console.warn(track);
     return 'No results found.';
   }
 

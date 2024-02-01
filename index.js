@@ -80,14 +80,11 @@ client.on('messageCreate', async (message) => {
     return await message.reply(await getTunebatSong(command, [artists, title]));
   }
 
-  let reply = [];
   const requests = args.join(' ').split(',');
+  const promises = requests.map((request) => getTunebatSong(command, [request]));
+  const responses = await Promise.all(promises);
 
-  for (const request of requests) {
-    reply.push(await getTunebatSong(command, [request]));
-  };
-
-  return await message.reply(reply.join('\n'));
+  return await message.reply(responses.join('\n'));
 });
 
 client.login(process.env.TOKEN);
