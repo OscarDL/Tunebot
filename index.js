@@ -40,14 +40,14 @@ const isMessageCommand = (message) => {
   return PREFIXES.includes(prefix) && COMMANDS.includes(command);
 };
 
-const getSpotifyPresence = async (message, command, user, reply) => {
+const getSpotifyPresence = async (command, user, empty, isMultiple) => {
   const currentSong = user.presence.activities.find((activity) => activity.name === 'Spotify');
-  if (!currentSong) {
-    return await message.reply(reply);
-  }
+  if (!currentSong) return empty;
 
   const {details: title, state: artists, assets: {largeText: album}} = currentSong;
-  return await message.reply(await getTunebatSong(command, [artists, title, album]));
+  const prefix = isMultiple ? `<@${user.id}>: ` : '';
+  const song = await getTunebatSong(command, [artists, title, album]);
+  return prefix + song;
 };
 
 
@@ -82,14 +82,18 @@ client.on('messageCreate', async (message) => {
 
   if (!args || args.length === 0) {
     const reply = 'No song currently playing, please provide an artist and song name.';
-    return await getSpotifyPresence(message, command, message.member, reply);
+    return await message.reply(await getSpotifyPresence(command, message.member, reply));
   }
 
-  const mention = message.mentions?.users?.first();
-  if (mention) {
-    const user = message.guild.members.cache.get(mention.id);
-    const reply = `No song currently playing for **${mention.username}**.`;
-    return await getSpotifyPresence(message, command, user, reply);
+  const mentions = message.mentions?.users;
+  if (mentions && mentions.first()) { // there's at least one mention
+    const getReply = (user) => `No song currently playing for **${user.username}**.`;
+
+    const users = mentions.map((mention) => message.guild.members.cache.get(mention.id));
+    const promises = users.map((user) => getSpotifyPresence(command, user, getReply(user), users.length > 1));
+    const responses = await Promise.all(promises);
+
+    return await message.reply(responses.join('\n'));
   }
 
   const requests = args.join(' ').split(',');
