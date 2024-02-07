@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { Client, IntentsBitField } from 'discord.js';
 
 import { getTunebatSong } from './src/tunebat/index.js';
-import { sendDeedgeMessage } from './src/deedge/index.js';
+import { sendDeedgeMessage } from './src/spam/index.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
 
 dotenv.config();
@@ -34,7 +34,11 @@ const client = new Client({
   ],
 });
 
-const isMessageCommand = (message) => PREFIXES.includes(message.content[0]);
+const isMessageCommand = (message) => {
+  const prefix = message.content[0];
+  const command = message.content.slice(1).toLowerCase().split(' ')[0];
+  return PREFIXES.includes(prefix) && COMMANDS.includes(command);
+};
 
 
 // --- CLIENT EVENTS --- //
@@ -52,20 +56,17 @@ client.on('messageCreate', async (message) => {
   //   return message.channel.send(await getPersonMessage(message, username, text));
   // }
 
+  if (message.author.bot) return;
+
+  if (!isMessageCommand(message)) return await sendDeedgeMessage(message);
+
+  await message.channel.sendTyping();
+
   const isVibinDip = await addDipCount(message);
   if (isVibinDip) return; // don't process the rest of the code if it's a vibin dip
 
-  if (!isMessageCommand(message)) {
-    const isDeedgeMessage = await sendDeedgeMessage(message);
-    if (isDeedgeMessage) return; // don't process the rest of the code if it's a deedge message
-  }
-
-  if (message.author.bot) return;
-  if (!isMessageCommand(message)) return;
-
   const content = message.content.slice(1).toLowerCase().split(' ');
   const [command, ...args] = content;
-  if (!COMMANDS.includes(command)) return;
 
   if (command === 'vibindips') return await getDips(message);
 
@@ -76,8 +77,8 @@ client.on('messageCreate', async (message) => {
       return await message.reply('No song currently playing, please provide an artist and song name.');
     }
 
-    const {details: title, state: artists} = currentSong;
-    return await message.reply(await getTunebatSong(command, [artists, title]));
+    const {details: title, state: artists, assets: {largeText: album}} = currentSong;
+    return await message.reply(await getTunebatSong(command, [artists, title, album]));
   }
 
   const requests = args.join(' ').split(',');
