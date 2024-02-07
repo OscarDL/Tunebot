@@ -40,6 +40,16 @@ const isMessageCommand = (message) => {
   return PREFIXES.includes(prefix) && COMMANDS.includes(command);
 };
 
+const getSpotifyPresence = async (message, command, user, reply) => {
+  const currentSong = user.presence.activities.find((activity) => activity.name === 'Spotify');
+  if (!currentSong) {
+    return await message.reply(reply);
+  }
+
+  const {details: title, state: artists, assets: {largeText: album}} = currentSong;
+  return await message.reply(await getTunebatSong(command, [artists, title, album]));
+};
+
 
 // --- CLIENT EVENTS --- //
 
@@ -71,14 +81,15 @@ client.on('messageCreate', async (message) => {
   if (command === 'vibindips') return await getDips(message);
 
   if (!args || args.length === 0) {
-    // get current spotify song playing
-    const currentSong = message.member.presence.activities.find((activity) => activity.name === 'Spotify');
-    if (!currentSong) {
-      return await message.reply('No song currently playing, please provide an artist and song name.');
-    }
+    const reply = 'No song currently playing, please provide an artist and song name.';
+    return await getSpotifyPresence(message, command, message.member, reply);
+  }
 
-    const {details: title, state: artists, assets: {largeText: album}} = currentSong;
-    return await message.reply(await getTunebatSong(command, [artists, title, album]));
+  const mention = message.mentions?.users?.first();
+  if (mention) {
+    const user = message.guild.members.cache.get(mention.id);
+    const reply = `No song currently playing for **${mention.username}**.`;
+    return await getSpotifyPresence(message, command, user, reply);
   }
 
   const requests = args.join(' ').split(',');
