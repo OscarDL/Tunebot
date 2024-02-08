@@ -4,6 +4,7 @@ import { Client, IntentsBitField } from 'discord.js';
 import { getTunebatSong } from './src/tunebat/index.js';
 import { sendDeedgeMessage } from './src/spam/index.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
+import { getConvertedTemperature } from './src/temp/index.js';
 
 dotenv.config();
 
@@ -16,6 +17,7 @@ const COMMANDS = [
   'info',
   'pop',
   'vibindips',
+  'temp',
 ];
 
 const PREFIXES = [
@@ -78,8 +80,13 @@ client.on('messageCreate', async (message) => {
   const content = message.content.slice(1).toLowerCase().split(' ');
   const [command, ...args] = content;
 
+  // vibin dips command
   if (command === 'vibindips') return await getDips(message);
 
+  // temperature conversion command
+  if (command === 'temp') return await message.reply(getConvertedTemperature(args[0]));
+
+  // the rest of the commands are for tunebat
   if (!args || args.length === 0) {
     const reply = 'No song currently playing, please provide an artist and song name.';
     return await message.reply(await getSpotifyPresence(command, message.member, reply));
