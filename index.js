@@ -67,12 +67,13 @@ client.on('messageCreate', async (message) => {
 
   if (message.author.bot) return;
 
-  if (!isMessageCommand(message)) return await sendDeedgeMessage(message);
+  if (!isMessageCommand(message)) {
+    await addDipCount(message);
+    await sendDeedgeMessage(message);
+    return;
+  }
 
   await message.channel.sendTyping();
-
-  const isVibinDip = await addDipCount(message);
-  if (isVibinDip) return; // don't process the rest of the code if it's a vibin dip
 
   const content = message.content.slice(1).toLowerCase().split(' ');
   const [command, ...args] = content;
