@@ -55,9 +55,9 @@ client.on('messageCreate', async (message) => {
   
   const getServerUser = (user) => message.guild.members.cache.get(user.id);
   
-  const getSpotifyPresence = async (command, user, presence, empty) => {
+  const getSpotifyPresence = async (command, user, presence, empty, noPrefix) => {
     const currentTrack = presence?.activities?.find((activity) => activity.name === 'Spotify');
-    const prefix = `**${getServerUser(user).nickname}**: `;
+    const prefix = noPrefix ? '' : `**${getServerUser(user).nickname}**: `;
     if (!currentTrack) return prefix + empty;
   
     const {details: title, state: artists, assets: {largeText: album}} = currentTrack;
@@ -84,10 +84,10 @@ client.on('messageCreate', async (message) => {
   if (command === 'temp') return await message.reply(getConvertedTemperature(args[0]));
 
   // the rest of the commands are for tunebat
-  if (!args || args.length === 0) {
+  if (!args || args.length === 0) { // self-ask for current song
     const {user, presence} = message.member;
     const reply = 'No track currently playing, please provide an artist and track name.';
-    return await message.reply(await getSpotifyPresence(command, user, presence, reply));
+    return await message.reply(await getSpotifyPresence(command, user, presence, reply, true));
   }
 
   const {mentions} = message;
