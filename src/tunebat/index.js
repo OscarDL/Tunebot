@@ -1,17 +1,19 @@
 import fetch from 'node-fetch';
 
 export const getTunebatTrack = async (command, searchTerm) => {
-  const sanitizedSearchTerm = searchTerm.map((term) => term.replace(/[;&()]/g, ''));
-  const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm.join('%20')}`);
-  const json = await res.json();
+  const attemptSearch = async () => {
+    const sanitizedSearchTerm = searchTerm.map((term) => term.replace(/[;&()]/g, ''));
+    const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm.join('%20')}`);
+    const json = await res.json();
+    return json.data.items[0];
+  };
 
-  const track = json.data.items[0];
+  let track = await attemptSearch();
 
   if (!track) {
-    console.warn(searchTerm);
-    console.warn(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm.join('%20')}`);
-    console.warn(track);
-    return 'No results found.';
+    // attempt a second time because sometimes tunebat api returns nothing once
+    track = await attemptSearch();
+    if (!track) return 'No results found.';
   }
 
   const {b: bpm, k: key, c: camelot, d: duration, p: popularity, id} = track;

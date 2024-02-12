@@ -98,7 +98,6 @@ client.on('messageCreate', async (message) => {
     }
 
     const users = filteredMentions.map((mention) => getServerUser(mention));
-    console.log(filteredMentions.size > 1)
     const promises = users.map(({user, presence}) => (
       getSpotifyPresence(command, user, presence, 'No track currently playing.')
     ));
