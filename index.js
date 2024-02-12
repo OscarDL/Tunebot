@@ -55,12 +55,12 @@ client.on('messageCreate', async (message) => {
   
   const getServerUser = (user) => message.guild.members.cache.get(user.id);
   
-  const getSpotifyPresence = async (command, user, presence, empty, isMultiple) => {
+  const getSpotifyPresence = async (command, user, presence, empty) => {
     const currentTrack = presence?.activities?.find((activity) => activity.name === 'Spotify');
-    if (!currentTrack) return empty;
+    const prefix = `**${getServerUser(user).nickname}**: `;
+    if (!currentTrack) return prefix + empty;
   
     const {details: title, state: artists, assets: {largeText: album}} = currentTrack;
-    const prefix = isMultiple ? `**${getServerUser(user).nickname}**: ` : '';
     const track = await getTunebatTrack(command, [artists, title, album]);
     return prefix + track;
   };
@@ -92,17 +92,15 @@ client.on('messageCreate', async (message) => {
 
   const {mentions} = message;
   const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
-  if (filteredMentions.size > 0) {
+  if (filteredMentions.size > 0) { // there's at least one mention in the message and it's not a reply
     if (filteredMentions.size > MAX_TUNEBAT_REQUESTS) {
-      return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS}  users at most.`);
+      return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} users at most.`);
     }
 
-    // there is at least one mention in the message and it's not a reply
-    const getReply = (user) => `**${getServerUser(user).nickname}**: no track currently playing.`;
-
     const users = filteredMentions.map((mention) => getServerUser(mention));
+    console.log(filteredMentions.size > 1)
     const promises = users.map(({user, presence}) => (
-      getSpotifyPresence(command, user, presence, getReply(user), filteredMentions.size > 1)
+      getSpotifyPresence(command, user, presence, 'No track currently playing.')
     ));
     const responses = await Promise.all(promises);
 
