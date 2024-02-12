@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 
-export const getTunebatSong = async (command, searchTerm) => {
+export const getTunebatTrack = async (command, searchTerm) => {
   const sanitizedSearchTerm = searchTerm.map((term) => term.replace(/[;&()]/g, ''));
   const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm.join('%20')}`);
   const json = await res.json();
