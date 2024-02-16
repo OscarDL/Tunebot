@@ -61,7 +61,7 @@ client.on('messageCreate', async (message) => {
     if (!currentTrack) return prefix + empty;
   
     const {details: title, state: artists, assets: {largeText: album}} = currentTrack;
-    const track = await getTunebatTrack(command, [artists, title, album]);
+    const track = await getTunebatTrack(command, [artists, title, album], title);
     return prefix + track;
   };
 

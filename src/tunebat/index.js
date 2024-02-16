@@ -1,11 +1,13 @@
 import fetch from 'node-fetch';
 
-export const getTunebatTrack = async (command, searchTerm) => {
+export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => {
   const attemptSearch = async () => {
     const sanitizedSearchTerm = searchTerm.map((term) => term.replace(/[;&()]/g, ''));
     const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm.join('%20')}`);
     const json = await res.json();
-    return json.data.items[0];
+
+    const match = json.data.items.find((track) => track.n === spotifyTrackName);
+    return match ?? json.data.items[0];
   };
 
   let track = await attemptSearch();
@@ -20,9 +22,12 @@ export const getTunebatTrack = async (command, searchTerm) => {
   const trackText = `**${track.n}** by ${track.as.join(', ')}`;
 
   switch (command) {
-    case 's':
-    case 'np': {
+    case 's': {
       return `https://open.spotify.com/track/${id}`;
+    }
+
+    case 'np': {
+      return `[${trackText}](https://open.spotify.com/track/${id}) is currently playing.`;
     }
 
     case 'bpm': {
