@@ -22,8 +22,9 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
   const trackText = `**${track.n}** by ${track.as.join(', ')}`;
 
   switch (command) {
-    case 's': {
-      return `https://open.spotify.com/track/${id}`;
+    case 's':
+    case 'spotify': {
+      return `[${trackText}](https://open.spotify.com/track/${id})`;
     }
 
     case 'np': {

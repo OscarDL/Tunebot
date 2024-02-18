@@ -10,6 +10,7 @@ dotenv.config();
 
 const COMMANDS = [
   's',
+  'spotify',
   'np',
   'bpm',
   'key',
