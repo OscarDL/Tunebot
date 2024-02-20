@@ -18,8 +18,13 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
     if (!track) return 'No results found.';
   }
 
-  const {b: bpm, k: key, c: camelot, d: duration, p: popularity, id} = track;
+  const {b: bpm, k: key, c: camelot, d: duration, l: label, p: popularity, rd: date, id} = track;
   const trackText = `**${track.n}** by ${track.as.join(', ')}`;
+  const length = duration / 1000;
+  const minutes = Math.floor(length / 60);
+  const seconds = Math.floor(length % 60);
+  // const releaseDate = new Intl.DateTimeFormat('en-US', {dateStyle: 'long'}).format(new Date(date));
+  // const labelName = label ? ` on ${label}` : '';
 
   switch (command) {
     case 's':
@@ -40,21 +45,26 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
     }
 
     case 'duration': {
-      const length = duration / 1000;
-      const minutes = Math.floor(length / 60);
-      const seconds = Math.floor(length % 60);
       return `${trackText} lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`;
-    }
-
-    case 'info': {
-      const length = duration / 1000;
-      const minutes = Math.floor(length / 60);
-      const seconds = Math.floor(length % 60);
-      return `${trackText} is **${bpm} BPM**, is written in **${key}** (${camelot}), and lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`;
     }
 
     case 'pop': {
       return `${trackText} has a popularity score of **${popularity}%** on Spotify.`;
+    }
+
+    // case 'release': {
+    //   return `${trackText} was released on **${releaseDate}**${labelName}.`;
+    // }
+
+    case 'info': {
+      return (
+        `${trackText}:\n` +
+        `BPM: **${bpm}**\n` +
+        `Key: **${key}** (${camelot})\n` +
+        `Duration: **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**\n` +
+        `Popularity: **${popularity}%** \n`// +
+        // `Release: **${releaseDate}**${labelName}`
+      );
     }
 
     default:

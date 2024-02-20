@@ -1,10 +1,10 @@
 import dotenv from 'dotenv';
 import { Client, IntentsBitField } from 'discord.js';
 
-import { getTunebatTrack } from './src/tunebat/index.js';
 import { sendDeedgeMessage } from './src/spam/index.js';
+import { getTunebatTrack } from './src/tunebat/index.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
-import { getConvertedTemperature } from './src/temp/index.js';
+import { getConvertedTemperature } from './src/convert/temp.js';
 
 dotenv.config();
 
@@ -17,6 +17,7 @@ const COMMANDS = [
   'duration',
   'info',
   'pop',
+  // 'release',
   'vibindips',
   'temp',
 ];
@@ -53,9 +54,9 @@ client.on('messageCreate', async (message) => {
     const command = message.content.slice(1).toLowerCase().split(' ')[0];
     return PREFIXES.includes(prefix) && COMMANDS.includes(command);
   };
-  
+
   const getServerUser = (user) => message.guild.members.cache.get(user.id);
-  
+
   const getSpotifyPresence = async (command, user, presence, empty, noPrefix) => {
     const currentTrack = presence?.activities?.find((activity) => activity.name === 'Spotify');
     const prefix = noPrefix ? '' : `**${getServerUser(user).nickname}**: `;
