@@ -1,10 +1,10 @@
 import dotenv from 'dotenv';
 import { Client, IntentsBitField } from 'discord.js';
 
-import { sendDeedgeMessage } from './src/spam/index.js';
 import { getTunebatTrack } from './src/tunebat/index.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
+import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
 
 dotenv.config();
 
@@ -71,7 +71,8 @@ client.on('messageCreate', async (message) => {
 
   if (!isMessageCommand(message)) {
     await addDipCount(message);
-    await sendDeedgeMessage(message);
+    await sendSpamUserMessage(message);
+    await checkShouldPingSpamUser(message);
     return;
   }
 
