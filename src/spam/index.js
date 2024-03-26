@@ -57,6 +57,7 @@ export const sendSpamUserMessage = async (message) => {
 export const checkShouldPingSpamUser = async (message) => {
   // if the message is pinging the bot, send a ping to spamUser and immediately delete it afterwards
   if (message.mentions?.repliedUser?.id !== process.env.BOT_DISCORD_ID) return;
+  if (!message.reference) return;
 
   const {messageId} = message.reference;
   const repliedMessage = await message.channel.messages.fetch(messageId);

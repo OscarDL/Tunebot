@@ -7,13 +7,19 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
     const json = await res.json();
 
     const match = json.data.items.find((track) => track.n === spotifyTrackName);
-    return match ?? json.data.items[0];
+    return match ?? json.data.items[0]; 
   };
 
-  let track = await attemptSearch();
+  let track;
+  try {
+    track = await attemptSearch();
+  } catch (error) {
+    return 'Could not fetch data. Tunebat may be having issues.';
+  }
 
   if (!track) {
-    // attempt a second time because sometimes tunebat api returns nothing once
+    // attempt a second search, because for some reason sometimes
+    // the tunebat api returns nothing even when there is a match
     track = await attemptSearch();
     if (!track) return 'No results found.';
   }
