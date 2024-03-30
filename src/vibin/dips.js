@@ -17,7 +17,7 @@ export const getDips = async (message) => {
 export const addDipCount = async (message) => {
   if (
     message.author.username === vibinUsername.toLowerCase() &&
-    ['dip', vibinDipGif].some((dip) => message.content.toLowerCase().split(' ').some((word) => word.includes(dip)))
+    ['dip', vibinDipGif].some((dip) => message.content.toLowerCase().split(' ').some((word) => word.startsWith(dip)))
   ) {
     const file = fs.readFileSync(filePath, 'utf8');
     const lines = file.split('\n');

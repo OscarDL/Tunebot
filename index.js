@@ -55,7 +55,7 @@ client.on('messageCreate', async (message) => {
     return PREFIXES.includes(prefix) && COMMANDS.includes(command);
   };
 
-  const getServerUser = (user) => message.guild.members.cache.get(user.id);
+  const getServerUser = async (user) => await message.guild.members.fetch(user.id);
 
   const getSpotifyPresence = async (command, user, presence, empty, noPrefix) => {
     const currentTrack = presence?.activities?.find((activity) => activity.name === 'Spotify');

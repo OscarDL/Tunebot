@@ -62,7 +62,7 @@ export const checkShouldPingSpamUser = async (message) => {
   const {messageId} = message.reference;
   const repliedMessage = await message.channel.messages.fetch(messageId);
   const sendGhostPing = async () => {
-    const ghostPing = await message.channel.send(`<@${spamUserId}>`);
+    const ghostPing = await message.channel.send(`<@${spamUserId}> ${message.content}`);
     await ghostPing.delete();
   };
 
