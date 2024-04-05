@@ -59,7 +59,7 @@ client.on('messageCreate', async (message) => {
 
   const getSpotifyPresence = async (command, user, presence, empty, noPrefix) => {
     const currentTrack = presence?.activities?.find((activity) => activity.name === 'Spotify');
-    const prefix = noPrefix ? '' : `**${getServerUser(user).nickname}**: `;
+    const prefix = noPrefix ? '' : `**${(await getServerUser(user)).nickname}**: `;
     if (!currentTrack) return prefix + empty;
   
     const {details: title, state: artists, assets: {largeText: album}} = currentTrack;
@@ -101,10 +101,10 @@ client.on('messageCreate', async (message) => {
       return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} users at most.`);
     }
 
-    const users = filteredMentions.map((mention) => getServerUser(mention));
-    const promises = users.map(({user, presence}) => (
+    const users = await Promise.all(filteredMentions.map(async (mention) => await getServerUser(mention)));
+    const promises = await Promise.all(users.map(({user, presence}) => (
       getSpotifyPresence(command, user, presence, 'No track currently playing.')
-    ));
+    )));
     const responses = await Promise.all(promises);
 
     return await message.reply(responses.join('\n'));
