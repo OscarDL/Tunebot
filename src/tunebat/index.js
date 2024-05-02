@@ -2,18 +2,29 @@ import fetch from 'node-fetch';
 
 export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => {
   const attemptSearch = async () => {
-    const sanitizedSearchTerm = searchTerm.map((term) => term.replace(/[;&()]/g, ''));
+    const sanitizedSearchTerm = searchTerm.map((term) => term.replace(/[;&|()]/g, ''));
     const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm.join('%20')}`);
     const json = await res.json();
 
-    const match = json.data.items.find((track) => track.n === spotifyTrackName);
-    return match ?? json.data.items[0]; 
+    const search = searchTerm.join(' ').toLowerCase();
+    if (search.includes('|')) {
+      const [one, two] = search.toLowerCase().split('|').map((term) => term.trim());
+      return json.data.items.find((track) => (
+        track.as.map((a) => a.toLowerCase()).includes(one) && track.n.toLowerCase() === two ||
+        track.as.map((a) => a.toLowerCase()).includes(two) && track.n.toLowerCase() === one
+      ));
+    } else if (spotifyTrackName) {
+      return json.data.items.find((track) => track.n === spotifyTrackName);
+    } else {
+      return json.data.items[0];
+    }
   };
 
   let track;
   try {
     track = await attemptSearch();
   } catch (error) {
+    console.log(error)
     return 'Could not fetch data. Tunebat may be having issues.';
   }
 
@@ -21,6 +32,8 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
     // attempt a second search, because for some reason sometimes
     // the tunebat api returns nothing even when there is a match
     track = await attemptSearch();
+    console.warn('Second search:');
+    console.warn(track);
     if (!track) return 'No results found.';
   }
 
@@ -38,6 +51,7 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
       return `[${trackText}](https://open.spotify.com/track/${id})`;
     }
 
+    case 'fm':
     case 'np': {
       return `[${trackText}](https://open.spotify.com/track/${id}) is currently playing.`;
     }

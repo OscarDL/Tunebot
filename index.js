@@ -11,6 +11,7 @@ dotenv.config();
 const COMMANDS = [
   's',
   'spotify',
+  'fm',
   'np',
   'bpm',
   'key',
@@ -24,7 +25,6 @@ const COMMANDS = [
 
 const PREFIXES = [
   '>',
-  ';',
   ',',
 ];
 
@@ -90,7 +90,7 @@ client.on('messageCreate', async (message) => {
   // the rest of the commands are for tunebat
   if (!args || args.length === 0) { // self-ask for current song
     const {user, presence} = message.member;
-    const reply = 'No track currently playing, please provide an artist and track name.';
+    const reply = 'No track currently playing.';
     return await message.reply(await getSpotifyPresence(command, user, presence, reply, true));
   }
 
