@@ -57,19 +57,19 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
     }
 
     case 'bpm': {
-      return `${trackText} is **${bpm} BPM**.`;
+      return `[${trackText}](<https://open.spotify.com/track/${id}>) is **${bpm} BPM**.`;
     }
 
     case 'key': {
-      return `${trackText} is written in **${key}** (${camelot}).`;
+      return `[${trackText}](<https://open.spotify.com/track/${id}>) is written in **${key}** (${camelot}).`;
     }
 
     case 'duration': {
-      return `${trackText} lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`;
+      return `[${trackText}](<https://open.spotify.com/track/${id}>) lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`;
     }
 
     case 'pop': {
-      return `${trackText} has a popularity score of **${popularity}%** on Spotify.`;
+      return `[${trackText}](<https://open.spotify.com/track/${id}>) has a popularity score of **${popularity}%** on Spotify.`;
     }
 
     // case 'release': {
@@ -78,7 +78,7 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
 
     case 'info': {
       return (
-        `${trackText}:\n` +
+        `[${trackText}](https://open.spotify.com/track/${id})\n` +
         `BPM: **${bpm}**\n` +
         `Key: **${key}** (${camelot})\n` +
         `Duration: **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**\n` +
