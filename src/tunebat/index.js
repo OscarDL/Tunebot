@@ -4,7 +4,22 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
   const attemptSearch = async () => {
     const sanitizedSearchTerm = searchTerm.map((term) => term.replace(/[;&|()]/g, ''));
     const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm.join('%20')}`);
+
+    switch (res.status) {
+      case 200:
+        break;
+      case 429:
+        throw new Error('Rate limit exceeded. Please try again later.');
+      default:
+        throw new Error('Could not fetch data. Tunebat may be having issues.');
+    }
+
     const json = await res.json();
+
+    if (!json.data.items[0]) {
+      console.log('failed Tunebat search at', new Date().toLocaleString().split(' ')[1]);
+      console.log(json);
+    }
 
     const search = searchTerm.join(' ').toLowerCase();
     if (search.includes('|')) {
@@ -24,17 +39,16 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
   try {
     track = await attemptSearch();
   } catch (error) {
-    console.log(error)
-    return 'Could not fetch data. Tunebat may be having issues.';
+    console.log(error);
+    return error;
   }
 
   if (!track) {
-    // attempt a second search, because for some reason sometimes
-    // the tunebat api returns nothing even when there is a match
+    // attempt a second search one second after because for some reason
+    // sometimes the tunebat api returns nothing even when there is a match
+    await new Promise(resolve => setTimeout(resolve, 3000)); // wait 3 seconds
     track = await attemptSearch();
-    console.warn('Second search:');
-    console.warn(track);
-    if (!track) return 'No results found.';
+    if (!track) return 'No results found, but Tunebat is probably just a bitch.';
   }
 
   const {b: bpm, k: key, c: camelot, d: duration, l: label, p: popularity, rd: date, id} = track;
