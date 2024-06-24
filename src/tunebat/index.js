@@ -1,5 +1,32 @@
 import fetch from 'node-fetch';
 
+const cleanWordsFromTrackName = (trackName) => {
+  let wordsToRemove = ['feat.', 'feat', 'ft.', 'ft', 'with', 'w/'];
+  wordsToRemove.map((word) => wordsToRemove.push(`(${word}`, `[${word}`));
+
+  const words = trackName.split(' ');
+
+  // find the index of the word to remove
+  const index = words.findIndex((word) => wordsToRemove.includes(word));
+  if (index === -1) return words.join(' ');
+
+  // remove the word at index, the character prior and everything up until the opposite corresponding character
+  const word = words[index];
+
+  switch (word[0]) {
+    case '(':
+      // remove what's inside the parentheses
+      const closingP = words.findIndex((word) => word.endsWith(')'));
+      return words.slice(0, index).join(' ') + words.slice(closingP + 1).join(' ');
+    case '[':
+      // remove what's inside the brackets
+      const closingB = words.findIndex((word) => word.endsWith(']'));
+      return words.slice(0, index).join(' ') + words.slice(closingB + 1).join(' ');
+    default:
+      return words.slice(0, index).join(' ') + words.slice(index + 1).join(' ');
+  }
+};
+
 export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => {
   const attemptSearch = async () => {
     const sanitizedSearchTerm = searchTerm.map((term) => term.replace(/[;&|()]/g, ''));
@@ -24,9 +51,10 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
     const search = searchTerm.join(' ').toLowerCase();
     if (search.includes('|')) {
       const [one, two] = search.toLowerCase().split('|').map((term) => term.trim());
+
       return json.data.items.find((track) => (
-        track.as.map((a) => a.toLowerCase()).includes(one) && track.n.toLowerCase() === two ||
-        track.as.map((a) => a.toLowerCase()).includes(two) && track.n.toLowerCase() === one
+        track.as.map((a) => a.toLowerCase()).includes(one) && cleanWordsFromTrackName(track.n).toLowerCase() === two ||
+        track.as.map((a) => a.toLowerCase()).includes(two) && cleanWordsFromTrackName(track.n).toLowerCase() === one
       ));
     } else if (spotifyTrackName) {
       return json.data.items.find((track) => track.n === spotifyTrackName);
