@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { Client, IntentsBitField } from 'discord.js';
 
 import { getTunebatTrack } from './src/tunebat/index.js';
+import { getRandomBingoCard } from './src/bingo/index.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
 import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
@@ -21,11 +22,12 @@ const COMMANDS = [
   // 'release',
   'vibindips',
   'temp',
+  'bingo',
 ];
 
 const PREFIXES = [
-  '>',
   ',',
+  '>',
 ];
 
 const MAX_TUNEBAT_REQUESTS = 5;
@@ -85,7 +87,10 @@ client.on('messageCreate', async (message) => {
   if (command === 'vibindips') return await getDips(message);
 
   // temperature conversion command
-  if (command === 'temp') return await message.reply(getConvertedTemperature(args[0]));
+  if (command === 'temp') return await getConvertedTemperature(args[0]);
+
+  // random bingo card creation
+  if (command === 'bingo') return await getRandomBingoCard(message);
 
   // the rest of the commands are for tunebat
   if (!args || args.length === 0) { // self-ask for current song

@@ -8,5 +8,5 @@ export const getConvertedTemperature = (message) => {
   const fahrenheit = unit === 'C' ? temp * 9 / 5 + 32 : temp;
 
   const result = wantsCelcius ? celsius + '°C' : fahrenheit + '°F';
-  return `${temp}°${unit} is ${result}.`;
+  return message.reply(`${temp}°${unit} is ${result}.`);
 };
