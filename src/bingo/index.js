@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { createCanvas } from 'canvas';
 
 // Constants for the bingo game
@@ -9,7 +10,40 @@ const cardWidth = 300;
 const cardHeight = 300;
 const cardPadding = 10;
 
-export const getRandomBingoCard = async (message) => {
+// Get the current date as a string from US-west timezone (YYYY-MM-DD)
+const getCurrentDateString = () => new Intl.DateTimeFormat('en-US', {
+  timeZone: 'America/Los_Angeles',
+  dateStyle: 'short',
+}).format(new Date());
+
+// Seeded random number generator (using Mulberry32)
+const seededRandom = (seed) => {
+  let t = seed;
+  return function() {
+    t += 0x6D2B79F5;
+    let x = t;
+    x = Math.imul(x ^ x >>> 15, 1 | x);
+    x ^= x + Math.imul(x ^ x >>> 7, 61 | x);
+    return ((x ^ x >>> 14) >>> 0) / 4294967296;
+  };
+};
+
+const getSeedForUserAndDate = (userAndDate) => {
+  const seed = crypto.createHash('sha256').update(userAndDate).digest('hex').slice(0, 8);
+  return parseInt(seed, 16);
+};
+
+// Shuffle array using seeded random number generator
+const shuffleArray = (array, seed) => {
+  const random = seededRandom(seed);
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+};
+
+export const getRandomBingoCard = async (message, userId) => {
   const channel = await message.guild.channels.fetch(process.env.BINGO_CHANNEL_ID);
   const bingo = await channel.messages.fetch(process.env.BINGO_MESSAGE_ID);
 
@@ -19,12 +53,16 @@ export const getRandomBingoCard = async (message) => {
   // Remove the first sentence of the message
   tiers.shift();
 
-  // Pick 6 random items from tier 1
-  // Pick 13 random items from tier 2
-  // Pick 6 random items from tier 3
-  const randomTier1 = tiers[0].sort(() => Math.random() - 0.5).slice(0, 6);
-  const randomTier2 = tiers[1].sort(() => Math.random() - 0.5).slice(0, 13);
-  const randomTier3 = tiers[2].sort(() => Math.random() - 0.5).slice(0, 6);
+  // Create a seed based on the current date string
+  const currentDateString = getCurrentDateString();
+  const seed = getSeedForUserAndDate(currentDateString + userId);
+
+  // Pick 6 random items from tier 1 using the seed
+  // Pick 13 random items from tier 2 using the seed
+  // Pick 6 random items from tier 3 using the seed
+  const randomTier1 = shuffleArray([...tiers[0]], seed).slice(0, 6);
+  const randomTier2 = shuffleArray([...tiers[1]], seed).slice(0, 13);
+  const randomTier3 = shuffleArray([...tiers[2]], seed).slice(0, 6);
 
   // Create a canvas
   const canvas = createCanvas(cardsPerRow * cardWidth, Math.ceil(cardCount / cardsPerRow) * cardHeight);
@@ -66,9 +104,9 @@ export const getRandomBingoCard = async (message) => {
     }
   }
 
-  // Shuffle the cards
+  // Shuffle the cards using the seed
   const cardTexts = [...randomTier1, ...randomTier2, ...randomTier3].map((text) => text.replace(/[\\n-]+/, ''));
-  const shuffledTexts = cardTexts.sort(() => 0.5 - Math.random());
+  const shuffledTexts = shuffleArray([...cardTexts], seed);
 
   // Draw the text cards on the canvas
   shuffledTexts.forEach((text, index) => {
@@ -85,6 +123,7 @@ export const getRandomBingoCard = async (message) => {
   out.on('finish', async () => {
     // Send the image file to the Discord channel
     await message.reply({
+      content: "Here's your personal Bingo card for today's stream:",
       files: [{
         attachment: path.join(process.env.ABS_PATH, 'bingo.png'),
         name: 'bingo.png'
@@ -94,6 +133,4 @@ export const getRandomBingoCard = async (message) => {
     // Delete the image file
     fs.unlinkSync(path.join(process.env.ABS_PATH, 'bingo.png'));
   });
-
-  // return message.reply(`Here's your bingo card!\n\nTier 1:\n${randomTier1.join('\n')}\n\nTier 2:\n${randomTier2.join('\n')}\n\nTier 3:\n${randomTier3.join('\n')}`);
 };

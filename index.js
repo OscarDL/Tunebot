@@ -90,7 +90,7 @@ client.on('messageCreate', async (message) => {
   if (command === 'temp') return await getConvertedTemperature(args[0]);
 
   // random bingo card creation
-  if (command === 'bingo') return await getRandomBingoCard(message);
+  if (command === 'bingo') return await getRandomBingoCard(message, message.author.id);
 
   // the rest of the commands are for tunebat
   if (!args || args.length === 0) { // self-ask for current song
