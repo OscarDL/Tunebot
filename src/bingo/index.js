@@ -48,21 +48,19 @@ export const getRandomBingoCard = async (message, userId) => {
   const bingo = await channel.messages.fetch(process.env.BINGO_MESSAGE_ID);
 
   // Split each tier into an array of items without the tier name
-  let tiers = bingo.content.split('\n\n# ').map((tier) => tier.split('\n').slice(1));
-
-  // Remove the first sentence of the message
-  tiers.shift();
+  let [_, free, likely, possible, unlikely] = bingo.content.split('\n\n# ').map((tier) => tier.split('\n').slice(1));
 
   // Create a seed based on the current date string
   const currentDateString = getCurrentDateString();
   const seed = getSeedForUserAndDate(currentDateString + userId);
 
   // Pick 6 random items from tier 1 using the seed
-  // Pick 13 random items from tier 2 using the seed
+  // Pick 12 random items from tier 2 using the seed
   // Pick 6 random items from tier 3 using the seed
-  const randomTier1 = shuffleArray([...tiers[0]], seed).slice(0, 6);
-  const randomTier2 = shuffleArray([...tiers[1]], seed).slice(0, 13);
-  const randomTier3 = shuffleArray([...tiers[2]], seed).slice(0, 6);
+  const randomFree = shuffleArray([...free], seed).slice(0, 1);
+  const randomLikely = shuffleArray([...likely], seed).slice(0, 6);
+  const randomPossible = shuffleArray([...possible], seed).slice(0, 12);
+  const randomUnlikely = shuffleArray([...unlikely], seed).slice(0, 6);
 
   // Create a canvas
   const canvas = createCanvas(cardsPerRow * cardWidth, Math.ceil(cardCount / cardsPerRow) * cardHeight);
@@ -105,8 +103,12 @@ export const getRandomBingoCard = async (message, userId) => {
   }
 
   // Shuffle the cards using the seed
-  const cardTexts = [...randomTier1, ...randomTier2, ...randomTier3].map((text) => text.replace(/[\\n-]+/, ''));
+  const cards = [...randomLikely, ...randomPossible, ...randomUnlikely];
+  const cardTexts = cards.map((text) => text.replace(/[\\n-]+/, ''));
   const shuffledTexts = shuffleArray([...cardTexts], seed);
+
+  // Add a card from the free tier that will always be in the center
+  shuffledTexts.splice(Math.floor(shuffledTexts.length / 2), 0, randomFree[0].replace('- ', '[FREE] '));
 
   // Draw the text cards on the canvas
   shuffledTexts.forEach((text, index) => {
