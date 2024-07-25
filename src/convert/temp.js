@@ -1,12 +1,12 @@
-export const getConvertedTemperature = (message) => {
-  const temp = Number(message.replace(/[^0-9.]/g, '')) || 0;
-  const unit = message.slice(-1).toUpperCase();
+export const getConvertedTemperature = (message, input) => {
+  const temp = Number(input.replace(/[^0-9.]/g, '')) || 0;
+  const unit = input.slice(-1).toUpperCase();
   if (!temp) return 'Please provide a temperature.';
 
-  const wantsCelcius = unit === 'F';
-  const celsius = unit === 'F' ? (temp - 32) * 5 / 9 : temp;
-  const fahrenheit = unit === 'C' ? temp * 9 / 5 + 32 : temp;
+  const isF = unit === 'F';
+  const celsius = isF ? (temp - 32) * 5 / 9 : temp;
+  const fahrenheit = isF ? temp : temp * 9 / 5 + 32;
 
-  const result = wantsCelcius ? celsius + '°C' : fahrenheit + '°F';
+  const result = Math.round((isF ? celsius : fahrenheit) * 100) / 100 + (isF ? '°C' : '°F');
   return message.reply(`${temp}°${unit} is ${result}.`);
 };

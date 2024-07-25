@@ -87,7 +87,7 @@ client.on('messageCreate', async (message) => {
   if (command === 'vibindips') return await getDips(message);
 
   // temperature conversion command
-  if (command === 'temp') return await getConvertedTemperature(args[0]);
+  if (command === 'temp') return await getConvertedTemperature(message, args[0]);
 
   // random bingo card creation
   if (command === 'bingo') return await getRandomBingoCard(message, message.author.id);
