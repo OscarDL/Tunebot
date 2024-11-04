@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { Client, IntentsBitField } from 'discord.js';
 
 import { getTunebatTrack } from './src/tunebat/index.js';
+import { getYouTubeVideo } from './src/youtube/index.js';
 import { getRandomBingoCard } from './src/bingo/index.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
@@ -65,6 +66,10 @@ client.on('messageCreate', async (message) => {
     if (!currentTrack) return prefix + empty;
   
     const {details: title, state: artists, assets: {largeText: album}} = currentTrack;
+
+    // That's a local file, so we don't want to search for it but only send the name
+    if (!artists) return await getYouTubeVideo(command, prefix, title);
+
     const track = await getTunebatTrack(command, [artists, title, album], title);
     return prefix + track;
   };

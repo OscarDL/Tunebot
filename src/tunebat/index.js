@@ -31,7 +31,7 @@ const cleanWordsFromTrackName = (trackName) => {
 
 export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => {
   const attemptSearch = async () => {
-    const sanitizedSearchTerm = searchTerm.map((term) => term.replace(/[;&|()]/g, ''));
+    const sanitizedSearchTerm = searchTerm.filter(Boolean).map((term) => term.replace(/[;&|()]/g, ''));
     const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm.join(' ')}`);
 
     switch (res.status) {
