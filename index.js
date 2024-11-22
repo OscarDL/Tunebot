@@ -12,6 +12,7 @@ dotenv.config();
 
 const COMMANDS = [
   's',
+  'fxs',
   'spotify',
   'fm',
   'np',

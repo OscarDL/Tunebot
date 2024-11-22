@@ -95,6 +95,10 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
       return `[${trackText}](https://open.spotify.com/track/${id})`;
     }
 
+    case 'fxs': {
+      return `[${trackText}](https://play.spotify.com/track/${id})`;
+    }
+
     case 'fm':
     case 'np': {
       return `[${trackText}](https://open.spotify.com/track/${id}) is currently playing.`;
