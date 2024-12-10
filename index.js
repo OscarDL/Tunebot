@@ -66,12 +66,12 @@ client.on('messageCreate', async (message) => {
     const prefix = noPrefix ? '' : `**${(await getServerUser(user)).nickname}**: `;
     if (!currentTrack) return prefix + empty;
   
-    const {details: title, state: artists, assets: {largeText: album}} = currentTrack;
+    const {details: title, state: artists} = currentTrack;
 
     // That's a local file, so we don't want to search for it but only send the name
     if (!artists) return await getLocalFileTrackInfo(command, prefix, title);
 
-    const track = await getTunebatTrack(command, [artists, title, album], title);
+    const track = await getTunebatTrack(command, `${artists.split(';')[0]} | ${title}`);
     return prefix + track;
   };
 
@@ -126,7 +126,7 @@ client.on('messageCreate', async (message) => {
     return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} tracks at most.`);
   }
 
-  const promises = requests.map((request) => getTunebatTrack(command, [request]));
+  const promises = requests.map((request) => getTunebatTrack(command, request, true));
   const responses = await Promise.all(promises);
 
   return await message.reply(responses.join('\n'));

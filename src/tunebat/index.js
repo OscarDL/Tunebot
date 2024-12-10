@@ -29,10 +29,10 @@ const cleanWordsFromTrackName = (trackName) => {
   }
 };
 
-export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => {
+export const getTunebatTrack = async (command, searchTerm, isExplicitSearch = false) => {
   const attemptSearch = async () => {
-    const sanitizedSearchTerm = searchTerm.filter(Boolean).map((term) => term.replace(/[;&|()]/g, ''));
-    const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm.join(' ')}`);
+    const sanitizedSearchTerm = searchTerm.replace(/[;&|()]/g, '');
+    const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm}`);
 
     switch (res.status) {
       case 200:
@@ -50,16 +50,15 @@ export const getTunebatTrack = async (command, searchTerm, spotifyTrackName) => 
       console.log(json);
     }
 
-    const search = searchTerm.join(' ').toLowerCase();
+    const search = searchTerm.toLowerCase();
     if (search.includes('|')) {
-      const [one, two] = search.toLowerCase().split('|').map((term) => term.trim());
+      const [one, two] = search.split('|').map((term) => term.trim());
+      const getTrackName = isExplicitSearch ? cleanWordsFromTrackName : String;
 
       return json.data.items.find((track) => (
-        track.as.map((a) => a.toLowerCase()).includes(one) && cleanWordsFromTrackName(track.n).toLowerCase() === two ||
-        track.as.map((a) => a.toLowerCase()).includes(two) && cleanWordsFromTrackName(track.n).toLowerCase() === one
+        track.as.map((a) => a.toLowerCase()).includes(one) && getTrackName(track.n).toLowerCase() === two ||
+        track.as.map((a) => a.toLowerCase()).includes(two) && getTrackName(track.n).toLowerCase() === one
       ));
-    } else if (spotifyTrackName) {
-      return json.data.items.find((track) => track.n === spotifyTrackName);
     } else {
       return json.data.items[0];
     }
