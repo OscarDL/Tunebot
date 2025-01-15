@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+// import fetch from 'node-fetch';
 
 export const getLocalFileTrackInfo = async (command, prefix, details) => {
   try {
@@ -37,7 +37,7 @@ export const getLocalFileTrackInfo = async (command, prefix, details) => {
       }
 
       default:
-        break;
+        throw 'Cannot execute this command with a local file.';
     }
   } catch (error) {
     console.log(error);
