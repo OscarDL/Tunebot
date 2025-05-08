@@ -43,9 +43,10 @@ const shuffleArray = (array, seed) => {
   return array;
 };
 
-export const getRandomBingoCard = async (message, userId) => {
+export const getRandomBingoCard = async (message) => {
   const channel = await message.guild.channels.fetch(process.env.BINGO_CHANNEL_ID);
   const bingo = await channel.messages.fetch(process.env.BINGO_MESSAGE_ID);
+  const userId = message.author.id;
 
   // Split each tier into an array of items without the tier name
   let [_, free, likely, possible, unlikely] = bingo.content.split('\n\n# ').map((tier) => tier.split('\n').slice(1));

@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { Client, IntentsBitField } from 'discord.js';
+import { Client, IntentsBitField, MessageFlagsBitField } from 'discord.js';
 
 import { getTunebatTrack } from './src/tunebat/index.js';
 import { getRandomBingoCard } from './src/bingo/index.js';
@@ -7,10 +7,12 @@ import { addDipCount, getDips } from './src/vibin/dips.js';
 import { getLocalFileTrackInfo } from './src/local/index.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
 import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
+import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
 
 dotenv.config();
 
 const COMMANDS = [
+  // spotify info commands
   's',
   'fxs',
   'spotify',
@@ -21,10 +23,16 @@ const COMMANDS = [
   'duration',
   'info',
   'pop',
-  // 'release',
+  // vibin dips count command
   'vibindips',
+  // temperature conversion
   'temp',
+  // create bingo card command
   'bingo',
+  // set lastfm username command
+  'setlastfm',
+  // fix ophelia scrobbles
+  'opheliafix',
 ];
 
 const PREFIXES = [
@@ -96,7 +104,13 @@ client.on('messageCreate', async (message) => {
   if (command === 'temp') return await getConvertedTemperature(message, args[0]);
 
   // random bingo card creation
-  if (command === 'bingo') return await getRandomBingoCard(message, message.author.id);
+  if (command === 'bingo') return await getRandomBingoCard(message);
+
+  // set lastfm username command
+  if (command === 'setlastfm') return await setLastfmUsername(message, args[0]);
+
+  // fix ophelia scrobbles command
+  if (command === 'opheliafix') return await fixOpheliaScrobblesForTimePeriod(message, args[0]);
 
   // the rest of the commands are for tunebat
   if (!args || args.length === 0) { // self-ask for current song

@@ -85,8 +85,6 @@ export const getTunebatTrack = async (command, searchTerm, isExplicitSearch = fa
   const length = duration / 1000;
   const minutes = Math.floor(length / 60);
   const seconds = Math.floor(length % 60);
-  // const releaseDate = new Intl.DateTimeFormat('en-US', {dateStyle: 'long'}).format(new Date(date));
-  // const labelName = label ? ` on ${label}` : '';
 
   switch (command) {
     case 's':
@@ -119,18 +117,13 @@ export const getTunebatTrack = async (command, searchTerm, isExplicitSearch = fa
       return `[${trackText}](<https://open.spotify.com/track/${id}>) has a popularity score of **${popularity}%** on Spotify.`;
     }
 
-    // case 'release': {
-    //   return `${trackText} was released on **${releaseDate}**${labelName}.`;
-    // }
-
     case 'info': {
       return (
         `[${trackText}](https://open.spotify.com/track/${id})\n` +
         `BPM: **${bpm}**\n` +
         `Key: **${key}** (${camelot})\n` +
         `Duration: **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**\n` +
-        `Popularity: **${popularity}%** \n`// +
-        // `Release: **${releaseDate}**${labelName}`
+        `Popularity: **${popularity}%** \n`
       );
     }
 
