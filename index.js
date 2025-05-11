@@ -110,7 +110,7 @@ client.on('messageCreate', async (message) => {
   if (command === 'setlastfm') return await setLastfmUsername(message, args[0]);
 
   // fix ophelia scrobbles command
-  if (command === 'opheliafix') return await fixOpheliaScrobblesForTimePeriod(message, args[0]);
+  if (command === 'opheliafix') return await fixOpheliaScrobblesForTimePeriod(message, args.join(' '));
 
   // the rest of the commands are for tunebat
   if (!args || args.length === 0) { // self-ask for current song

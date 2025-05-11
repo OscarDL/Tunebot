@@ -2,10 +2,22 @@ import crypto from 'crypto';
 
 import { LASTFM_API_KEY, LASTFM_API_SECRET, LASTFM_API_URL } from './utils.js';
 
-const generateMd5HashSig = (url) => {
+// params is a key/value pair object
+export const generateMd5HashSig = (params) => {
   const hash = crypto.createHash('md5');
-  const params = url.split('?')[1].split('&').sort().join('') + LASTFM_API_SECRET;
-  hash.update(params.replaceAll('=', ''));
+  const sortedParams = Object.keys(params)
+    .sort()
+    .map((key) => {
+      if (Array.isArray(params[key])) {
+        return params[key]
+          .map((value) => `${key}${value}`)
+          .join('');
+      }
+      return `${key}${params[key]}`;
+    })
+    .concat(LASTFM_API_SECRET)
+    .join('');
+  hash.update(sortedParams);
   return hash.digest('hex');
 };
 
