@@ -11,7 +11,6 @@ export const MISMATCH_TRACK_SUFFIXES = [
 
 export const WHITELISTED_ARTISTS = [
   'abandoned',
-  'au5',
   'blastoyz',
   'blanke',
   'caster',

@@ -82,7 +82,8 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
       return message.reply(`Error: ${data.message}`);
     }
 
-    const tracks = data.recenttracks.track.filter((track) => !!track.date);
+    console.log(data.recenttracks)
+    const tracks = [data.recenttracks.track].flat(1).filter((track) => !!track.date);
     if (!tracks || tracks.length === 0) {
       return message.reply('No scrobbles found for the specified date.');
     }
