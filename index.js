@@ -92,10 +92,18 @@ client.on('messageCreate', async (message) => {
     return;
   }
 
-  await message.channel.sendTyping();
-
   const content = message.content.slice(1).toLowerCase().split(' ');
   const [command, ...args] = content;
+
+  // fix ophelia scrobbles command
+  if (command === 'opheliafix') {
+    message.channel.sendTyping();
+    const typingInterval = setInterval(() => message.channel.sendTyping(), 5000);
+    await fixOpheliaScrobblesForTimePeriod(message, args.join(' '));
+    return clearInterval(typingInterval);
+  }
+
+  message.channel.sendTyping();
 
   // vibin dips command
   if (command === 'vibindips') return await getDips(message);
@@ -108,9 +116,6 @@ client.on('messageCreate', async (message) => {
 
   // set lastfm username command
   if (command === 'setlastfm') return await setLastfmUsername(message, args[0]);
-
-  // fix ophelia scrobbles command
-  if (command === 'opheliafix') return await fixOpheliaScrobblesForTimePeriod(message, args.join(' '));
 
   // the rest of the commands are for tunebat
   if (!args || args.length === 0) { // self-ask for current song

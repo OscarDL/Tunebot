@@ -6,7 +6,7 @@ export const BLACKLISTED_TITLES = [
   'feat.', 'ft.', 'feat', 'ft', 'with', 'w/',
 ];
 export const MISMATCH_TRACK_SUFFIXES = [
-  'mix', 'mixed', 'remix', 'vip', 'acoustic', 'explicit', 'cover', 'live',
+  'mix', 'mixed', 'remix', 'vip', 'acoustic', 'cover',
 ];
 
 export const WHITELISTED_ARTISTS = [

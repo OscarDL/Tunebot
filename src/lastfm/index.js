@@ -143,18 +143,14 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
               return;
             }
 
-            const sameTrack = relevantResults.find((result) => {
-              return (
-                result.name.toLowerCase() === track.name.toLowerCase() &&
-                result.artist.toLowerCase() === track.artist['#text'].toLowerCase()
-              );
-            });
-            const secondMatch = relevantResults.find((result) => {
-              return (
-                result.name.toLowerCase() !== track.name.toLowerCase() &&
-                result.artist.toLowerCase() === track.artist['#text'].toLowerCase()
-              );
-            });
+            const sameTrack = relevantResults.find((result) => (
+              result.name.toLowerCase() === track.name.toLowerCase() &&
+              result.artist.toLowerCase() === track.artist['#text'].toLowerCase()
+            ));
+            const secondMatch = relevantResults.find((result) => (
+              result.name.toLowerCase() !== track.name.toLowerCase() &&
+              result.artist.toLowerCase() === track.artist['#text'].toLowerCase()
+            ));
 
             if (
               !secondMatch ||
