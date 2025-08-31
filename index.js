@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { Client, IntentsBitField, MessageFlagsBitField } from 'discord.js';
+import { Client, IntentsBitField } from 'discord.js';
 
 import { getTunebatTrack } from './src/tunebat/index.js';
 import { getRandomBingoCard } from './src/bingo/index.js';
@@ -30,9 +30,9 @@ const COMMANDS = [
   // create bingo card command
   'bingo',
   // set lastfm username command
-  'setlastfm',
+  // 'setlastfm',
   // fix ophelia scrobbles
-  'opheliafix',
+  // 'opheliafix',
 ];
 
 const PREFIXES = [
