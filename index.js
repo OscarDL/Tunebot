@@ -6,6 +6,7 @@ import { getConvertedTemperature } from './src/convert/temp.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
 import { getLocalFileTrackInfo } from './src/local/index.js';
 import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
+import { repeatTypingDuringCommand } from './src/utils.js';
 import { getTunebatTrack } from './src/tunebat/index.js';
 import { runTunebatBrowserInstance } from './src/tunebat/browser.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
@@ -96,15 +97,14 @@ client.on('messageCreate', async (message) => {
   const content = message.content.slice(1).toLowerCase().split(' ');
   const [command, ...args] = content;
 
+  message.channel.sendTyping();
+
   // fix ophelia scrobbles command
   if (command === 'opheliafix') {
-    message.channel.sendTyping();
-    const typingInterval = setInterval(() => message.channel.sendTyping(), 5000);
-    await fixOpheliaScrobblesForTimePeriod(message, args.join(' '));
-    return clearInterval(typingInterval);
+    return await repeatTypingDuringCommand(message, async () => {
+      await fixOpheliaScrobblesForTimePeriod(message, args.join(' '));
+    });
   }
-
-  message.channel.sendTyping();
 
   // vibin dips command
   if (command === 'vibindips') return await getDips(message);
@@ -119,40 +119,42 @@ client.on('messageCreate', async (message) => {
   if (command === 'setlastfm') return await setLastfmUsername(message, args[0]);
 
   // the rest of the commands are for tunebat
-  await runTunebatBrowserInstance(message, async (page) => {
-    if (!args || args.length === 0) { // self-ask for current song
-      const {user, presence} = message.member;
-      const reply = 'No track currently playing.';
-      return await message.reply(await getSpotifyPresence(command, page, user, presence, reply, true));
-    }
-
-    const {mentions} = message;
-    const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
-    if (filteredMentions.size > 0) { // there's at least one mention in the message and it's not a reply
-      if (filteredMentions.size > MAX_TUNEBAT_REQUESTS) {
-        return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} users at most.`);
+  await repeatTypingDuringCommand(message, async () => {
+    await runTunebatBrowserInstance(message, async (page) => {
+      if (!args || args.length === 0) { // self-ask for current song
+        const {user, presence} = message.member;
+        const reply = 'No track currently playing.';
+        return await message.reply(await getSpotifyPresence(command, page, user, presence, reply, true));
       }
 
-      const users = await Promise.all(filteredMentions.map(async (mention) => await getServerUser(mention)));
+      const {mentions} = message;
+      const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
+      if (filteredMentions.size > 0) { // there's at least one mention in the message and it's not a reply
+        if (filteredMentions.size > MAX_TUNEBAT_REQUESTS) {
+          return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} users at most.`);
+        }
+
+        const users = await Promise.all(filteredMentions.map(async (mention) => await getServerUser(mention)));
+        const responses = [];
+        for (const {user, presence} of users) {
+          responses.push(await getSpotifyPresence(command, page, user, presence, 'No track currently playing.'));
+        }
+
+        return await message.reply(responses.join('\n'));
+      }
+
+      const requests = args.join(' ').split(', ');
+      if (requests.length > MAX_TUNEBAT_REQUESTS) {
+        return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} tracks at most.`);
+      }
+
       const responses = [];
-      for (const {user, presence} of users) {
-        responses.push(await getSpotifyPresence(command, page, user, presence, 'No track currently playing.'));
+      for (const request of requests) {
+        responses.push(await getTunebatTrack(command, page, request, true));
       }
 
       return await message.reply(responses.join('\n'));
-    }
-
-    const requests = args.join(' ').split(', ');
-    if (requests.length > MAX_TUNEBAT_REQUESTS) {
-      return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} tracks at most.`);
-    }
-
-    const responses = [];
-    for (const request of requests) {
-      responses.push(await getTunebatTrack(command, page, request, true));
-    }
-
-    return await message.reply(responses.join('\n'));
+    });
   });
 });
 
