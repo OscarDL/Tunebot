@@ -1,13 +1,14 @@
 import dotenv from 'dotenv';
 import { Client, IntentsBitField } from 'discord.js';
 
-import { getTunebatTrack } from './src/tunebat/index.js';
 import { getRandomBingoCard } from './src/bingo/index.js';
-import { addDipCount, getDips } from './src/vibin/dips.js';
-import { getLocalFileTrackInfo } from './src/local/index.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
-import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
+import { getLocalFileTrackInfo } from './src/local/index.js';
+import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
+import { getTunebatTrack } from './src/tunebat/index.js';
+import { runTunebatBrowserInstance } from './src/tunebat/browser.js';
+import { addDipCount, getDips } from './src/vibin/dips.js';
 
 dotenv.config();
 
@@ -69,7 +70,7 @@ client.on('messageCreate', async (message) => {
 
   const getServerUser = async (user) => await message.guild.members.fetch(user.id);
 
-  const getSpotifyPresence = async (command, user, presence, empty, noPrefix) => {
+  const getSpotifyPresence = async (command, page, user, presence, empty, noPrefix) => {
     const currentTrack = presence?.activities?.find((activity) => activity.name === 'Spotify');
     const prefix = noPrefix ? '' : `**${(await getServerUser(user)).nickname}**: `;
     if (!currentTrack) return prefix + empty;
@@ -79,7 +80,7 @@ client.on('messageCreate', async (message) => {
     // That's a local file, so we don't want to search for it but only send the name
     if (!artists) return await getLocalFileTrackInfo(command, prefix, title);
 
-    const track = await getTunebatTrack(command, `${artists.split(';')[0]} | ${title}`);
+    const track = await getTunebatTrack(command, page, `${artists.split(';')[0]} | ${title}`);
     return prefix + track;
   };
 
@@ -118,37 +119,41 @@ client.on('messageCreate', async (message) => {
   if (command === 'setlastfm') return await setLastfmUsername(message, args[0]);
 
   // the rest of the commands are for tunebat
-  if (!args || args.length === 0) { // self-ask for current song
-    const {user, presence} = message.member;
-    const reply = 'No track currently playing.';
-    return await message.reply(await getSpotifyPresence(command, user, presence, reply, true));
-  }
-
-  const {mentions} = message;
-  const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
-  if (filteredMentions.size > 0) { // there's at least one mention in the message and it's not a reply
-    if (filteredMentions.size > MAX_TUNEBAT_REQUESTS) {
-      return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} users at most.`);
+  await runTunebatBrowserInstance(message, async (page) => {
+    if (!args || args.length === 0) { // self-ask for current song
+      const {user, presence} = message.member;
+      const reply = 'No track currently playing.';
+      return await message.reply(await getSpotifyPresence(command, page, user, presence, reply, true));
     }
 
-    const users = await Promise.all(filteredMentions.map(async (mention) => await getServerUser(mention)));
-    const promises = await Promise.all(users.map(({user, presence}) => (
-      getSpotifyPresence(command, user, presence, 'No track currently playing.')
-    )));
-    const responses = await Promise.all(promises);
+    const {mentions} = message;
+    const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
+    if (filteredMentions.size > 0) { // there's at least one mention in the message and it's not a reply
+      if (filteredMentions.size > MAX_TUNEBAT_REQUESTS) {
+        return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} users at most.`);
+      }
+
+      const users = await Promise.all(filteredMentions.map(async (mention) => await getServerUser(mention)));
+      const responses = [];
+      for (const {user, presence} of users) {
+        responses.push(await getSpotifyPresence(command, page, user, presence, 'No track currently playing.'));
+      }
+
+      return await message.reply(responses.join('\n'));
+    }
+
+    const requests = args.join(' ').split(', ');
+    if (requests.length > MAX_TUNEBAT_REQUESTS) {
+      return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} tracks at most.`);
+    }
+
+    const responses = [];
+    for (const request of requests) {
+      responses.push(await getTunebatTrack(command, page, request, true));
+    }
 
     return await message.reply(responses.join('\n'));
-  }
-
-  const requests = args.join(' ').split(',');
-  if (requests.length > MAX_TUNEBAT_REQUESTS) {
-    return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} tracks at most.`);
-  }
-
-  const promises = requests.map((request) => getTunebatTrack(command, request, true));
-  const responses = await Promise.all(promises);
-
-  return await message.reply(responses.join('\n'));
+  });
 });
 
 client.login(process.env.TOKEN);

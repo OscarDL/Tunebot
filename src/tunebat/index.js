@@ -1,20 +1,4 @@
 import { parse } from 'node-html-parser';
-import puppeteer from 'puppeteer-extra';
-import StealthPlugin from 'puppeteer-extra-plugin-stealth';
-
-puppeteer.use(StealthPlugin({
-  enabledEvasions: [
-    'chrome.runtime',
-    'iframe.contentWindow',
-    'media.codecs',
-    'navigator.languages',
-    'navigator.permissions',
-    'navigator.plugins',
-    'navigator.webdriver',
-    'sourceurl',
-    'user-agent-override'
-  ]
-}));
 
 const cleanWordsFromTrackName = (trackName) => {
   let wordsToRemove = ['feat.', 'feat', 'ft.', 'ft', 'with', 'w/'];
@@ -156,107 +140,73 @@ const getInfoFromTrackElement = (element) => {
   return {artist, title, key, bpm, camelot, popularity, spotifyLink};
 };
 
-export const getTunebatTrack = async (command, searchTerm, isExplicitSearch = false) => {
-  let browser;
+export const getTunebatTrack = async (command, page, searchTerm, isExplicitSearch = false) => {
   const sanitizedSearchTerm = searchTerm.replace(/[;&|()]/g, '');
 
-  try {
-    browser = await puppeteer.launch({ args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-    const page = await browser.newPage();
+  // Find the search input field and enter the search term
+  await page.waitForSelector('input[aria-label="Song search field"]');
+  await page.type('input[aria-label="Song search field"]', sanitizedSearchTerm);
+  await page.keyboard.press('Enter');
 
-    await page.setExtraHTTPHeaders({
-      Accept: 'application/json, text/plain, */*',
-      'Accept-Encoding': 'gzip, deflate, br', // Important for Cloudflare
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0',
+  // Wait for search results to load
+  await page.waitForSelector('body main > div:only-child'); // Wait for the loading spinner to disappear
+
+  let specificTrack;
+  const search = searchTerm.toLowerCase();
+  const content = await page.content();
+  const data = parse(content).querySelectorAll('body main form + div > :not(:first-child)');
+
+  if (search.includes('|')) {
+    const [one, two] = search.split('|').map((term) => term.trim());
+    const getTrackName = isExplicitSearch ? cleanWordsFromTrackName : String;
+
+    specificTrack = data.find((track) => {
+      const info = getInfoFromTrackElement(track);
+      return (
+        info.artist.split(', ').map((a) => a.toLowerCase()).includes(one) && getTrackName(info.title).toLowerCase() === two ||
+        info.artist.split(', ').map((a) => a.toLowerCase()).includes(two) && getTrackName(info.title).toLowerCase() === one
+      );
     });
+  }
 
-    // Navigate first to homepage to establish trust
-    await page.goto('https://tunebat.com', { waitUntil: 'networkidle2' });
+  const track = getInfoFromTrackElement(specificTrack ?? data[0]);
+  const {artist, title, bpm, key, camelot, popularity, spotifyLink} = track;
+  const trackText = `**${title}** by ${artist}`;
 
-    page.setDefaultNavigationTimeout(60000); // 60 seconds
-    page.setDefaultTimeout(60000); // For other operations like waitForSelector
-
-    // Wait for Cloudflare challenge to complete if any
-    while (true) {
-      const content = await page.content();
-      if (!content.includes('Just a moment...')) {
-        break;
-      }
-      await new Promise(resolve => setTimeout(resolve, 1000));
+  switch (command) {
+    case 's':
+    case 'spotify': {
+      return `[${trackText}](${spotifyLink})`;
     }
 
-    // Find the search input field and enter the search term
-    await page.waitForSelector('input[aria-label="Song search field"]');
-    await page.type('input[aria-label="Song search field"]', sanitizedSearchTerm);
-    await page.keyboard.press('Enter');
-
-    // Wait for search results to load
-    await page.waitForSelector('body main > div:only-child'); // Wait for the loading spinner to disappear
-
-    let specificTrack;
-    const search = searchTerm.toLowerCase();
-    const content = await page.content();
-    const data = parse(content).querySelectorAll('body main form + div > :not(:first-child)');
-
-    if (search.includes('|')) {
-      const [one, two] = search.split('|').map((term) => term.trim());
-      const getTrackName = isExplicitSearch ? cleanWordsFromTrackName : String;
-
-      specificTrack = data.find((track) => {
-        const info = getInfoFromTrackElement(track);
-        return (
-          info.artist.split(', ').map((a) => a.toLowerCase()).includes(one) && getTrackName(info.title).toLowerCase() === two ||
-          info.artist.split(', ').map((a) => a.toLowerCase()).includes(two) && getTrackName(info.title).toLowerCase() === one
-        );
-      });
+    case 'fxs': {
+      return `[${trackText}](${spotifyLink.replace('open.spotify.com', 'play.spotify.com')})`;
     }
 
-    const track = getInfoFromTrackElement(specificTrack ?? data[0]);
-    const {artist, title, bpm, key, camelot, popularity, spotifyLink} = track;
-    const trackText = `**${title}** by ${artist}`;
-
-    switch (command) {
-      case 's':
-      case 'spotify': {
-        return `[${trackText}](${spotifyLink})`;
-      }
-
-      case 'fxs': {
-        return `[${trackText}](${spotifyLink.replace('open.spotify.com', 'play.spotify.com')})`;
-      }
-
-      case 'fm':
-      case 'np': {
-        return `[${trackText}](${spotifyLink}) is currently playing.`;
-      }
-
-      case 'bpm': {
-        return `[${trackText}](${spotifyLink}) is **${bpm} BPM**.`;
-      }
-
-      case 'key': {
-        return `[${trackText}](${spotifyLink}) is written in **${key}** (${camelot}).`;
-      }
-
-      case 'pop': {
-        return `[${trackText}](${spotifyLink}) has a popularity score of **${popularity}%** on Spotify.`;
-      }
-
-      case 'info': {
-        return (
-          `[${trackText}](${spotifyLink})\n` +
-          `BPM: **${bpm}**\n` +
-          `Key: **${key}** (${camelot})\n` +
-          `Popularity: **${popularity}%** \n`
-        );
-      }
+    case 'fm':
+    case 'np': {
+      return `[${trackText}](${spotifyLink}) is currently playing.`;
     }
-  } catch (error) {
-    console.error('Error during operation:', error);
-    return null;
-  } finally {
-    if (browser) {
-      await browser.close();
+
+    case 'bpm': {
+      return `[${trackText}](${spotifyLink}) is **${bpm} BPM**.`;
+    }
+
+    case 'key': {
+      return `[${trackText}](${spotifyLink}) is written in **${key}** (${camelot}).`;
+    }
+
+    case 'pop': {
+      return `[${trackText}](${spotifyLink}) has a popularity score of **${popularity}%** on Spotify.`;
+    }
+
+    case 'info': {
+      return (
+        `[${trackText}](${spotifyLink})\n` +
+        `BPM: **${bpm}**\n` +
+        `Key: **${key}** (${camelot})\n` +
+        `Popularity: **${popularity}%** \n`
+      );
     }
   }
 }
