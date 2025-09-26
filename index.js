@@ -4,10 +4,11 @@ import { Client, IntentsBitField } from 'discord.js';
 import { getRandomBingoCard } from './src/bingo/index.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
+import { fixEmbeddedLink } from './src/linkfix/index.js';
 import { getLocalFileTrackInfo } from './src/local/index.js';
 import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
 import { repeatTypingDuringCommand } from './src/utils.js';
-import { getTunebatTrack } from './src/tunebat/index.js';
+import { fetchTrackInfo } from './src/tunebat/index.js';
 import { runTunebatBrowserInstance } from './src/tunebat/browser.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
 
@@ -17,9 +18,10 @@ const COMMANDS = [
   // spotify info commands
   's',
   'fxs',
-  'spotify',
   'fm',
+  'fxfm',
   'np',
+  'fxnp',
   'bpm',
   'key',
   'duration',
@@ -75,13 +77,13 @@ client.on('messageCreate', async (message) => {
     const currentTrack = presence?.activities?.find((activity) => activity.name === 'Spotify');
     const prefix = noPrefix ? '' : `**${(await getServerUser(user)).nickname}**: `;
     if (!currentTrack) return prefix + empty;
-  
+
     const {details: title, state: artists} = currentTrack;
 
     // That's a local file, so we don't want to search for it but only send the name
     if (!artists) return await getLocalFileTrackInfo(command, prefix, title);
 
-    const track = await getTunebatTrack(command, page, `${artists.split(';')[0]} | ${title}`);
+    const track = await fetchTrackInfo({command, page, presence: currentTrack});
     return prefix + track;
   };
 
@@ -89,6 +91,7 @@ client.on('messageCreate', async (message) => {
 
   if (!isMessageCommand(message)) {
     await addDipCount(message);
+    await fixEmbeddedLink(message);
     await sendSpamUserMessage(message);
     await checkShouldPingSpamUser(message);
     return;
@@ -150,7 +153,7 @@ client.on('messageCreate', async (message) => {
 
       const responses = [];
       for (const request of requests) {
-        responses.push(await getTunebatTrack(command, page, request, true));
+        responses.push(await fetchTrackInfo({command, page, searchTerm: request, isExplicitSearch: true}));
       }
 
       return await message.reply(responses.join('\n'));

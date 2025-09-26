@@ -29,109 +29,6 @@ const cleanWordsFromTrackName = (trackName) => {
   }
 };
 
-// export const getTunebatTrack = async (command, searchTerm, isExplicitSearch = false) => {
-//   const attemptSearch = async () => {
-//     const sanitizedSearchTerm = searchTerm.replace(/[;&|()]/g, '');
-//     const res = await fetch(`https://api.tunebat.com/api/tracks/search?term=${sanitizedSearchTerm}`);
-
-//     switch (res.status) {
-//       case 200:
-//         break;
-//       case 429:
-//         throw new Error('Rate limit exceeded. Please try again later.');
-//       default:
-//         throw new Error('Could not fetch data. Tunebat may be having issues.');
-//     }
-
-//     const json = await res.json();
-
-//     if (!json.data.items[0]) {
-//       console.log('failed Tunebat search at', new Date().toLocaleString().split(' ')[1]);
-//       console.log(json);
-//     }
-
-//     const search = searchTerm.toLowerCase();
-//     if (search.includes('|')) {
-//       const [one, two] = search.split('|').map((term) => term.trim());
-//       const getTrackName = isExplicitSearch ? cleanWordsFromTrackName : String;
-
-//       return json.data.items.find((track) => (
-//         track.as.map((a) => a.toLowerCase()).includes(one) && getTrackName(track.n).toLowerCase() === two ||
-//         track.as.map((a) => a.toLowerCase()).includes(two) && getTrackName(track.n).toLowerCase() === one
-//       ));
-//     } else {
-//       return json.data.items[0];
-//     }
-//   };
-
-//   let track;
-//   try {
-//     track = await attemptSearch();
-//   } catch (error) {
-//     console.log(error);
-//     return error;
-//   }
-
-//   if (!track) {
-//     // attempt a second search one second after because for some reason
-//     // sometimes the tunebat api returns nothing even when there is a match
-//     await new Promise(resolve => setTimeout(resolve, 3000)); // wait 3 seconds
-//     track = await attemptSearch();
-//     if (!track) return 'No results found, but Tunebat is probably just a bitch.';
-//   }
-
-//   const {b: bpm, k: key, c: camelot, d: duration, l: label, p: popularity, rd: date, id} = track;
-//   const trackText = `**${track.n}** by ${track.as.join(', ')}`;
-//   const length = duration / 1000;
-//   const minutes = Math.floor(length / 60);
-//   const seconds = Math.floor(length % 60);
-
-//   switch (command) {
-//     case 's':
-//     case 'spotify': {
-//       return `[${trackText}](https://open.spotify.com/track/${id})`;
-//     }
-
-//     case 'fxs': {
-//       return `[${trackText}](https://play.spotify.com/track/${id})`;
-//     }
-
-//     case 'fm':
-//     case 'np': {
-//       return `[${trackText}](https://open.spotify.com/track/${id}) is currently playing.`;
-//     }
-
-//     case 'bpm': {
-//       return `[${trackText}](<https://open.spotify.com/track/${id}>) is **${bpm} BPM**.`;
-//     }
-
-//     case 'key': {
-//       return `[${trackText}](<https://open.spotify.com/track/${id}>) is written in **${key}** (${camelot}).`;
-//     }
-
-//     case 'duration': {
-//       return `[${trackText}](<https://open.spotify.com/track/${id}>) lasts **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**.`;
-//     }
-
-//     case 'pop': {
-//       return `[${trackText}](<https://open.spotify.com/track/${id}>) has a popularity score of **${popularity}%** on Spotify.`;
-//     }
-
-//     case 'info': {
-//       return (
-//         `[${trackText}](https://open.spotify.com/track/${id})\n` +
-//         `BPM: **${bpm}**\n` +
-//         `Key: **${key}** (${camelot})\n` +
-//         `Duration: **${minutes}:${seconds < 10 ? '0' : ''}${seconds}**\n` +
-//         `Popularity: **${popularity}%** \n`
-//       );
-//     }
-
-//     default:
-//       break;
-//   }
-// };
-
 const getInfoFromTrackElement = (element) => {
   const [track, info] = element.querySelectorAll('a[href^="/Info/"] > div > :last-child > div > div');
   const [artist, title] = track.childNodes.map((node) => node.rawText.trim());
@@ -140,7 +37,25 @@ const getInfoFromTrackElement = (element) => {
   return {artist, title, key, bpm, camelot, popularity, spotifyLink};
 };
 
-export const getTunebatTrack = async (command, page, searchTerm, isExplicitSearch = false) => {
+export const fetchTrackInfo = async ({command, page, presence, searchTerm, isExplicitSearch = false}) => {
+  if (presence) {
+    const {details: title, state: artists, syncId: trackId} = presence;
+    const trackText = `**${title}** by ${artists.replaceAll(';', ',')}`;
+    switch (command) {
+      case 'fm':
+      case 'np':
+      case 's': {
+        return `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
+      }
+
+      case 'fxfm':
+      case 'fxnp':
+      case 'fxs': {
+        return `[${trackText}](${`https://play.spotify.com/track/${trackId}`})`;
+      }
+    }
+  }
+
   const sanitizedSearchTerm = searchTerm.replace(/[;&|()]/g, '');
 
   // Find the search input field and enter the search term
@@ -169,23 +84,17 @@ export const getTunebatTrack = async (command, page, searchTerm, isExplicitSearc
     });
   }
 
-  const track = getInfoFromTrackElement(specificTrack ?? data[0]);
-  const {artist, title, bpm, key, camelot, popularity, spotifyLink} = track;
+  const {artist, title, bpm, key, camelot, popularity, spotifyLink} = getInfoFromTrackElement(specificTrack ?? data[0]);
   const trackText = `**${title}** by ${artist}`;
-
   switch (command) {
-    case 's':
-    case 'spotify': {
-      return `[${trackText}](${spotifyLink})`;
-    }
-
-    case 'fxs': {
-      return `[${trackText}](${spotifyLink.replace('open.spotify.com', 'play.spotify.com')})`;
-    }
-
     case 'fm':
-    case 'np': {
-      return `[${trackText}](${spotifyLink}) is currently playing.`;
+    case 's': {
+      return `[${trackText}](${`https://open.spotify.com/track/${spotifyLink}`})`;
+    }
+
+    case 'fxfm':
+    case 'fxs': {
+      return `[${trackText}](${`https://play.spotify.com/track/${spotifyLink}`})`;
     }
 
     case 'bpm': {

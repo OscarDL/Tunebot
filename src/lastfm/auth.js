@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-import { LASTFM_API_KEY, LASTFM_API_SECRET, LASTFM_API_URL } from './utils.js';
+import { LASTFM_API_URL } from './utils.js';
 
 // params is a key/value pair object
 export const generateMd5HashSig = (params) => {
@@ -15,14 +15,14 @@ export const generateMd5HashSig = (params) => {
       }
       return `${key}${params[key]}`;
     })
-    .concat(LASTFM_API_SECRET)
+    .concat(process.env.LASTFM_API_SECRET)
     .join('');
   hash.update(sortedParams);
   return hash.digest('hex');
 };
 
 const createToken = async () => {
-  const url = `${LASTFM_API_URL}?api_key=${LASTFM_API_KEY}&format=json&method=auth.getToken`;
+  const url = `${LASTFM_API_URL}?api_key=${process.env.LASTFM_API_KEY}&format=json&method=auth.getToken`;
   const token = await fetch(`${url}&api_sig=${generateMd5HashSig(url)}`)
     .then((response) => response.json())
     .then((data) => data.token)
@@ -44,7 +44,7 @@ export const initiateLogin = async (message) => {
     return message.reply(error);
   }
 
-  const authRequestUrl = `http://www.last.fm/api/auth/?api_key=${LASTFM_API_KEY}&token=${token}`;
+  const authRequestUrl = `http://www.last.fm/api/auth/?api_key=${process.env.LASTFM_API_KEY}&token=${token}`;
   message.author.send(`Please authorize the bot by clicking this link: ${authRequestUrl}`);
   message.reply(`Check your DMs for the link to authorize the bot.`);
 
@@ -56,7 +56,7 @@ export const initiateLogin = async (message) => {
   return new Promise((resolve) => {
     const checkAuthInterval = setInterval(async () => {
       attempts += 1;
-      const authUrl = `${LASTFM_API_URL}?api_key=${LASTFM_API_KEY}&method=auth.getSession&token=${token}`;
+      const authUrl = `${LASTFM_API_URL}?api_key=${process.env.LASTFM_API_KEY}&method=auth.getSession&token=${token}`;
 
       try {
         const data = await fetch(`${authUrl}&format=json&api_sig=${generateMd5HashSig(authUrl)}`)
@@ -88,7 +88,7 @@ export const initiateLogin = async (message) => {
 
 // export const searchTrack = async (trackName) => {
 //   const SEARCH_TRACKS = 'track.search';
-//   const TRACK_SEARCH_QUERY_STRING = `&track=${trackName}&api_key=${LASTFM_API_KEY}&limit=10&format=json`;
+//   const TRACK_SEARCH_QUERY_STRING = `&track=${trackName}&api_key=${process.env.LASTFM_API_KEY}&limit=10&format=json`;
 //   const trackSearchReqeustURL = encodeURI(
 //     `${LASTFM_API_URL}${SEARCH_TRACKS}${TRACK_SEARCH_QUERY_STRING}`
 //   );

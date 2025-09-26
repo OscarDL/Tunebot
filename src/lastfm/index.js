@@ -3,7 +3,7 @@ import fs from 'fs';
 import { generateMd5HashSig, initiateLogin } from './auth.js';
 import { unscrobble } from './unscrobble.js';
 import users from './users.json' with { type: 'json' };
-import { LASTFM_API_KEY, LASTFM_API_URL, MISMATCH_TRACK_SUFFIXES, WHITELISTED_ARTISTS, BLACKLISTED_TITLES } from './utils.js';
+import { LASTFM_API_URL, MISMATCH_TRACK_SUFFIXES, WHITELISTED_ARTISTS, BLACKLISTED_TITLES } from './utils.js';
 
 export const setLastfmUsername = async (message) => {
   const userId = message.author.id;
@@ -19,14 +19,14 @@ export const setLastfmUsername = async (message) => {
   if (existingUserIndex !== -1) {
     // Update existing user
     users[existingUserIndex].lastfm.username = lastfmSession.name;
-    users[existingUserIndex].lastfm.sk = lastfmSession.key;
+    users[existingUserIndex].lastfm.sessionKey = lastfmSession.key;
   } else {
     // Add user to the list
     users.push({
       discordId: userId,
       lastfm: {
         username: lastfmSession.name,
-        sk: lastfmSession.key,
+        sessionKey: lastfmSession.key,
       },
     });
   }
@@ -46,7 +46,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
     return message.reply('You need to set your last.fm username first using the `setlastfm` command.');
   }
 
-  let recentsUrl = `${LASTFM_API_URL}?method=user.getrecenttracks&user=${user.lastfm.username}&api_key=${LASTFM_API_KEY}&format=json&limit=200`;
+  let recentsUrl = `${LASTFM_API_URL}?method=user.getrecenttracks&user=${user.lastfm.username}&api_key=${process.env.LASTFM_API_KEY}&format=json&limit=200`;
 
   // if no time period is provided, use the current day
   const date = timePeriod ? new Date(timePeriod) : new Date();
@@ -82,7 +82,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
       return message.reply(`Error: ${data.message}`);
     }
 
-    console.log(data.recenttracks)
+    console.log(data.recenttracks['@attr'].total + ' scrobbles');
     const tracks = [data.recenttracks.track].flat(1).filter((track) => !!track.date);
     if (!tracks || tracks.length === 0) {
       return message.reply('No scrobbles found for the specified date.');
@@ -102,7 +102,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
         continue;
       }
 
-      const searchTracksUrl = `${LASTFM_API_URL}?method=track.search&artist=${encodeURIComponent(track.artist['#text'])}&track=${encodeURIComponent(track.name)}&api_key=${LASTFM_API_KEY}&format=json`;
+      const searchTracksUrl = `${LASTFM_API_URL}?method=track.search&artist=${encodeURIComponent(track.artist['#text'])}&track=${encodeURIComponent(track.name)}&api_key=${process.env.LASTFM_API_KEY}&format=json`;
 
       // Wait for the timeout and the API call to complete before continuing
       await new Promise((resolve) => {
@@ -165,8 +165,8 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
 
             const options = {
               method: 'track.scrobble',
-              api_key: LASTFM_API_KEY,
-              sk: user.lastfm.sk,
+              api_key: process.env.LASTFM_API_KEY,
+              sk: user.lastfm.sessionKey,
               artist: secondMatch.artist,
               track: secondMatch.name,
               timestamp: track.date.uts,

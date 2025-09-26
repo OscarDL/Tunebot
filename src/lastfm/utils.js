@@ -1,6 +1,4 @@
 export const LASTFM_API_URL = 'http://ws.audioscrobbler.com/2.0/';
-export const LASTFM_API_SECRET = process.env.LASTFM_API_SECRET;
-export const LASTFM_API_KEY = process.env.LASTFM_API_KEY;
 
 export const BLACKLISTED_TITLES = [
   'feat.', 'ft.', 'feat', 'ft', 'with', 'w/',
@@ -35,5 +33,4 @@ export const WHITELISTED_ARTISTS = [
   'trivecta',
   'wooli',
   'xavi',
-  'yetep',
 ];

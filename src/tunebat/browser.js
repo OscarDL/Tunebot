@@ -11,8 +11,8 @@ puppeteer.use(StealthPlugin({
     'navigator.plugins',
     'navigator.webdriver',
     'sourceurl',
-    'user-agent-override'
-  ]
+    'user-agent-override',
+  ],
 }));
 
 const createBrowserPage = async (browser) => {
