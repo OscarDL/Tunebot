@@ -89,12 +89,12 @@ export const fetchTrackInfo = async ({command, page, presence, searchTerm, isExp
   switch (command) {
     case 'fm':
     case 's': {
-      return `[${trackText}](${`https://open.spotify.com/track/${spotifyLink}`})`;
+      return `[${trackText}](${spotifyLink})`;
     }
 
     case 'fxfm':
     case 'fxs': {
-      return `[${trackText}](${`https://play.spotify.com/track/${spotifyLink}`})`;
+      return `[${trackText}](${spotifyLink.replace('open.spotify.com', 'play.spotify.com')})`;
     }
 
     case 'bpm': {
