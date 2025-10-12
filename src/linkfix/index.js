@@ -15,7 +15,7 @@ export const fixEmbeddedLink = async (message) => {
 
     const instagramMatch = url.match(/https:\/\/(((www\.)?)instagram\.com)/);
     if (instagramMatch) {
-      reply += `[Link${i}](${url.replace(instagramMatch[0], 'https://kkinstagram.com')})`;
+      reply += `[Link${i}](${url.replace(instagramMatch[0], 'https://vxinstagram.com')})`;
       continue;
     }
 

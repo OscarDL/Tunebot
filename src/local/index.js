@@ -1,6 +1,6 @@
 // import fetch from 'node-fetch';
 
-export const getLocalFileTrackInfo = async (command, prefix, details) => {
+export const getLocalFileTrackInfo = async (prefix, details) => {
   try {
     let videoText = '';
 
@@ -23,22 +23,7 @@ export const getLocalFileTrackInfo = async (command, prefix, details) => {
     // const video = content.find((item) => Object.keys(item)[0] === 'videoRenderer')?.videoRenderer;
     // videoText = `**${video.title.runs[0].text}** by ${video.ownerText.runs[0].text}`;
 
-    videoText = videoText ? `[${videoText}](https://youtu.be/${video.videoId})` : details;
-
-    switch (command) {
-      case 's':
-      case 'spotify': {
-        return prefix + videoText;
-      }
-
-      case 'fm':
-      case 'np': {
-        return prefix + `${videoText} is currently playing.`;
-      }
-
-      default:
-        throw 'Cannot execute this command with a local file.';
-    }
+    return prefix + (videoText ? `[${videoText}](https://youtu.be/${video.videoId})` : details);
   } catch (error) {
     console.log(error);
     return error;

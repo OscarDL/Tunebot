@@ -1,15 +1,17 @@
 import dotenv from 'dotenv';
-import { Client, IntentsBitField } from 'discord.js';
+import { Client, IntentsBitField, MessageFlags } from 'discord.js';
 
 import { getRandomBingoCard } from './src/bingo/index.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
+// import { runGoogleBrowserInstance } from './src/google/index.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
 import { fixEmbeddedLink } from './src/linkfix/index.js';
-import { getLocalFileTrackInfo } from './src/local/index.js';
+import { getServerUser, getSpotifyPresence } from './src/discord/index.js';
 import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
-import { repeatTypingDuringCommand } from './src/utils.js';
-import { fetchTrackInfo } from './src/tunebat/index.js';
-import { runTunebatBrowserInstance } from './src/tunebat/browser.js';
+import { getSpotifyTrack, searchSpotifyTrack } from './src/spotify/search.js';
+// import { fetchTrackInfo } from './src/tunebat/index.js';
+// import { runTunebatBrowserInstance } from './src/tunebat/browser.js';
+import { checkMaxRequests, repeatTypingDuringCommand } from './src/utils.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
 
 dotenv.config();
@@ -22,20 +24,21 @@ const COMMANDS = [
   'fxfm',
   'np',
   'fxnp',
-  'bpm',
-  'key',
+  'cover',
   'duration',
-  'info',
   'pop',
-  // vibin dips count command
+  // 'bpm',  // disabled until tunebat works again
+  // 'key',  // disabled until tunebat works again
+  // 'info', // disabled until tunebat works again
+  /* --- vibin dips count command --- */
   'vibindips',
-  // temperature conversion
+  /* --- temperature conversion --- */
   'temp',
-  // create bingo card command
+  /* --- create bingo card command --- */
   'bingo',
-  // set lastfm username command
+  /* --- set lastfm username command --- */
   // 'setlastfm',
-  // fix ophelia scrobbles
+  /* --- fix ophelia scrobbles --- */
   // 'opheliafix',
 ];
 
@@ -43,8 +46,6 @@ const PREFIXES = [
   ',',
   '>',
 ];
-
-const MAX_TUNEBAT_REQUESTS = 5;
 
 const client = new Client({
   intents: [
@@ -69,22 +70,6 @@ client.on('messageCreate', async (message) => {
     const prefix = message.content[0];
     const command = message.content.slice(1).toLowerCase().split(' ')[0];
     return PREFIXES.includes(prefix) && COMMANDS.includes(command);
-  };
-
-  const getServerUser = async (user) => await message.guild.members.fetch(user.id);
-
-  const getSpotifyPresence = async (command, page, user, presence, empty, noPrefix) => {
-    const currentTrack = presence?.activities?.find((activity) => activity.name === 'Spotify');
-    const prefix = noPrefix ? '' : `**${(await getServerUser(user)).nickname}**: `;
-    if (!currentTrack) return prefix + empty;
-
-    const {details: title, state: artists} = currentTrack;
-
-    // That's a local file, so we don't want to search for it but only send the name
-    if (!artists) return await getLocalFileTrackInfo(command, prefix, title);
-
-    const track = await fetchTrackInfo({command, page, presence: currentTrack});
-    return prefix + track;
   };
 
   if (message.author.bot) return;
@@ -121,43 +106,135 @@ client.on('messageCreate', async (message) => {
   // set lastfm username command
   if (command === 'setlastfm') return await setLastfmUsername(message, args[0]);
 
+  const getTrackMessage = ({presence, apiTrack}) => {
+    if (apiTrack) {
+      const {name: title, artists, id: trackId} = apiTrack;
+      const trackText = `**${title}** by ${artists.map((a) => a.name).join(', ')}`;
+      return `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
+    }
+
+    if (typeof presence === 'string') return presence;
+    const {details: title, state: artists, syncId: trackId} = presence;
+    const trackText = `**${title}** by ${artists.replaceAll(';', ',')}`;
+    return `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
+  };
+
   // the rest of the commands are for tunebat
   await repeatTypingDuringCommand(message, async () => {
-    await runTunebatBrowserInstance(message, async (page) => {
-      if (!args || args.length === 0) { // self-ask for current song
+    try {
+      const tracks = [];
+
+      const isSelfAsk = !args || args.length === 0 ||
+        (args.length === 1 && args[0] === `<@${message.author.id}>`);
+
+      const isSpecificSongRequest = args && args.length > 0 && args.some(arg => /(.)*<@\d+>(.)*/.test(arg)) === false;
+
+      if (isSelfAsk) {
         const {user, presence} = message.member;
-        const reply = 'No track currently playing.';
-        return await message.reply(await getSpotifyPresence(command, page, user, presence, reply, true));
+        tracks.push({
+          presence: await getSpotifyPresence(user, presence, isSelfAsk),
+        });
       }
 
-      const {mentions} = message;
-      const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
-      if (filteredMentions.size > 0) { // there's at least one mention in the message and it's not a reply
-        if (filteredMentions.size > MAX_TUNEBAT_REQUESTS) {
-          return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} users at most.`);
+      else if (!isSpecificSongRequest) {
+        const {mentions} = message;
+        const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
+
+        if (filteredMentions.size > 0) {
+          await checkMaxRequests(command, filteredMentions.size, false);
+
+          const users = await Promise.all(
+            filteredMentions.map((mention) => getServerUser(message, mention)),
+          );
+          for (const {user, presence} of users) {
+            tracks.push({
+              presence: await getSpotifyPresence(user, presence),
+            });
+          }
+        }
+      }
+
+      else {
+        const requests = args.join(' ').split(', ');
+        await checkMaxRequests(command, requests.length, true);
+
+        for (const request of requests) {
+          tracks.push({
+            apiTrack: await searchSpotifyTrack(request),
+          });
+        }
+      }
+
+      switch (command) {
+        case 's':
+        case 'np':
+        case 'fm':
+          return await message.reply({
+            flags: [MessageFlags.SuppressNotifications],
+            content: tracks.map(getTrackMessage).join('\n'),
+          });
+
+        case 'fxs':
+        case 'fxnp':
+        case 'fxfm': {
+          return await message.reply({
+            flags: [MessageFlags.SuppressNotifications],
+            content: tracks.map(getTrackMessage).join('\n')
+              .replaceAll('https://open.spotify.com', 'https://play.spotify.com')
+          });
         }
 
-        const users = await Promise.all(filteredMentions.map(async (mention) => await getServerUser(mention)));
-        const responses = [];
-        for (const {user, presence} of users) {
-          responses.push(await getSpotifyPresence(command, page, user, presence, 'No track currently playing.'));
+        case 'cover': {
+          if (tracks.some((track) => typeof track === 'string')) {
+            return await message.reply({
+              flags: [MessageFlags.SuppressNotifications],
+              content: 'You can only request the cover of a track that is currently playing and not a local file.',
+            });
+          }
+
+          return await message.reply({
+            flags: [MessageFlags.SuppressNotifications],
+            content: tracks[0].presence.assets.largeImage.replace('spotify:', 'https://i.scdn.co/image/')
+              ?? tracks[0].apiTrack.album.images[0].url,
+          });
         }
 
-        return await message.reply(responses.join('\n'));
-      }
+        case 'duration':
+        case 'pop': {
+          if (tracks.some((track) => typeof track === 'string')) {
+            return await message.reply({
+              flags: [MessageFlags.SuppressNotifications],
+              content: `You can only request the ${command === 'duration' ? 'duration' : 'popularity'} of a track that is currently playing and not a local file.`,
+            });
+          }
 
-      const requests = args.join(' ').split(', ');
-      if (requests.length > MAX_TUNEBAT_REQUESTS) {
-        return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} tracks at most.`);
-      }
+          const spotifyTracks = JSON.parse(JSON.stringify(tracks));
+          for (const trackIndex in tracks) {
+            if (tracks[trackIndex].presence) {
+              spotifyTracks[trackIndex].apiTrack =
+                await getSpotifyTrack(tracks[trackIndex].presence.syncId);
+            }
+          }
 
-      const responses = [];
-      for (const request of requests) {
-        responses.push(await fetchTrackInfo({command, page, searchTerm: request, isExplicitSearch: true}));
+          return await message.reply({
+            flags: [MessageFlags.SuppressNotifications],
+            content: tracks.map((track) => track.apiTrack).map((track) => {
+              return `**${track.name}** by ${track.artists.map((a) => a.name).join(', ')} ${
+                command === 'duration'
+                  ? `lasts ${Math.floor(track.duration_ms / 60000)}:${String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')} minutes.`
+                  : `has a popularity score of **${track.popularity}%** on Spotify.`
+              }`;
+            }).join('\n'),
+          });
+        }
       }
-
-      return await message.reply(responses.join('\n'));
-    });
+    } catch (error) {
+      console.error(error);
+      return await message.reply({
+        flags: [MessageFlags.SuppressNotifications],
+        content: error.message || 'An unknown error occurred.',
+      });
+    }
   });
 });
 
