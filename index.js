@@ -1,11 +1,12 @@
 import dotenv from 'dotenv';
-import { Client, IntentsBitField } from 'discord.js';
+import { Client, IntentsBitField, MessageFlags } from 'discord.js';
 
 import { getRandomBingoCard } from './src/bingo/index.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
+import { runGoogleBrowserInstance } from './src/google/index.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
 import { fixEmbeddedLink } from './src/linkfix/index.js';
-import { getLocalFileTrackInfo } from './src/local/index.js';
+import { getServerUser, getSpotifyPresence } from './src/discord/index.js';
 import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
 import { repeatTypingDuringCommand } from './src/utils.js';
 import { fetchTrackInfo } from './src/tunebat/index.js';
@@ -40,11 +41,12 @@ const COMMANDS = [
 ];
 
 const PREFIXES = [
-  ',',
-  '>',
+  '$',
+  '$',
 ];
 
-const MAX_TUNEBAT_REQUESTS = 5;
+const MAX_USER_REQUESTS = 3;
+const MAX_SONG_REQUESTS = 10;
 
 const client = new Client({
   intents: [
@@ -69,22 +71,6 @@ client.on('messageCreate', async (message) => {
     const prefix = message.content[0];
     const command = message.content.slice(1).toLowerCase().split(' ')[0];
     return PREFIXES.includes(prefix) && COMMANDS.includes(command);
-  };
-
-  const getServerUser = async (user) => await message.guild.members.fetch(user.id);
-
-  const getSpotifyPresence = async (command, page, user, presence, empty, noPrefix) => {
-    const currentTrack = presence?.activities?.find((activity) => activity.name === 'Spotify');
-    const prefix = noPrefix ? '' : `**${(await getServerUser(user)).nickname}**: `;
-    if (!currentTrack) return prefix + empty;
-
-    const {details: title, state: artists} = currentTrack;
-
-    // That's a local file, so we don't want to search for it but only send the name
-    if (!artists) return await getLocalFileTrackInfo(command, prefix, title);
-
-    const track = await fetchTrackInfo({command, page, presence: currentTrack});
-    return prefix + track;
   };
 
   if (message.author.bot) return;
@@ -121,43 +107,118 @@ client.on('messageCreate', async (message) => {
   // set lastfm username command
   if (command === 'setlastfm') return await setLastfmUsername(message, args[0]);
 
+  const getNowPlayingMessage = (spotifyPresence, domain = 'open') => {
+    if (typeof spotifyPresence === 'string') return spotifyPresence;
+    const {details: title, state: artists, syncId: trackId} = spotifyPresence;
+    const trackText = `**${title}** by ${artists.replaceAll(';', ',')}`;
+    return `[${trackText}](${`https://${domain}.spotify.com/track/${trackId}`})`;
+  };
+
   // the rest of the commands are for tunebat
   await repeatTypingDuringCommand(message, async () => {
-    await runTunebatBrowserInstance(message, async (page) => {
-      if (!args || args.length === 0) { // self-ask for current song
-        const {user, presence} = message.member;
-        const reply = 'No track currently playing.';
-        return await message.reply(await getSpotifyPresence(command, page, user, presence, reply, true));
-      }
+    const tracks = [];
 
-      const {mentions} = message;
-      const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
-      if (filteredMentions.size > 0) { // there's at least one mention in the message and it's not a reply
-        if (filteredMentions.size > MAX_TUNEBAT_REQUESTS) {
-          return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} users at most.`);
-        }
+    const isSelfAsk = !args || !args.length ||
+      (args.length === 1 && args[0] === `<@${message.author.id}>`);
 
-        const users = await Promise.all(filteredMentions.map(async (mention) => await getServerUser(mention)));
-        const responses = [];
-        for (const {user, presence} of users) {
-          responses.push(await getSpotifyPresence(command, page, user, presence, 'No track currently playing.'));
-        }
+    const isSpecificSongRequest = args && args.length > 0 && !args[0].startsWith('<@');
 
-        return await message.reply(responses.join('\n'));
-      }
+    if (isSelfAsk) {
+      const {user, presence} = message.member;
+      tracks.push(await getSpotifyPresence(user, presence, isSelfAsk));
+    }
 
+    else if (isSpecificSongRequest) {
       const requests = args.join(' ').split(', ');
-      if (requests.length > MAX_TUNEBAT_REQUESTS) {
-        return await message.reply(`Please ask for ${MAX_TUNEBAT_REQUESTS} tracks at most.`);
+      if (requests.length > MAX_SONG_REQUESTS) {
+        return await message.reply(`Please ask for ${MAX_SONG_REQUESTS} tracks at most.`);
       }
 
       const responses = [];
-      for (const request of requests) {
-        responses.push(await fetchTrackInfo({command, page, searchTerm: request, isExplicitSearch: true}));
-      }
+      await runGoogleBrowserInstance(message, async (page) => {
+        const acceptCookiesButton = await page.$(
+          'div[aria-modal="true"][role="dialog"] button:has(div[role="none"]) + button:has(div[role="none"])',
+        );
+        await acceptCookiesButton.click();
 
-      return await message.reply(responses.join('\n'));
-    });
+        for (const request of requests) {
+          const sanitizedSearchTerm = request.replace(/[;&|()]/g, '');
+          const searchBox = await page.$('textarea[name="q"]');
+          await searchBox.click();
+          // empty the search box first
+          await page.keyboard.down('Control');
+          await page.keyboard.press('A');
+          await page.keyboard.up('Control');
+          await page.keyboard.press('Backspace');
+          // type the new search term
+          await searchBox.type(sanitizedSearchTerm + ' site:tunebat.com');
+          await page.keyboard.press('Enter');
+          // if captcha, find the checkbox by its position and click it
+          await new Promise(resolve => setTimeout(resolve, 10000));
+          const recaptchaBox = await page.waitForSelector('iframe[title="reCAPTCHA"]');
+          const { x, y } = await recaptchaBox.boundingBox();
+          await page.mouse.click(x + 20, y + 40);
+          await new Promise(resolve => setTimeout(resolve, 150000));
+
+          // wait for results to load
+          await page.$('#search');
+          await new Promise(resolve => setTimeout(resolve, 150000));
+          // responses.push(await fetchTrackInfo({command, page, searchTerm: sanitizedSearchTerm, isExplicitSearch: true}));
+        }
+      });
+    }
+
+    else {
+      const {mentions} = message;
+      const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
+
+      if (filteredMentions.size > 0) {
+        // there's at least one mention in the message and it's not a reply
+        if (filteredMentions.size > MAX_USER_REQUESTS) {
+          return await message.reply(`Please ask for ${MAX_USER_REQUESTS} users at most.`);
+        }
+
+        const users = await Promise.all(
+          filteredMentions.map((mention) => getServerUser(message, mention)),
+        );
+        for (const {user, presence} of users) {
+          tracks.push(await getSpotifyPresence(user, presence));
+        }
+      }
+    }
+
+    switch (command) {
+      case 's':
+      case 'np':
+      case 'fm':
+        return await message.reply({
+          flags: [MessageFlags.SuppressNotifications],
+          content: tracks.map(getNowPlayingMessage).join('\n'),
+        });
+
+      case 'fxs':
+      case 'fxnp':
+      case 'fxfm': {
+        return await message.reply({
+          flags: [MessageFlags.SuppressNotifications],
+          content: tracks.map((track) => getSpotifyPresence(track, 'play')).join('\n'),
+        });
+      }
+    }
+
+    // await runTunebatBrowserInstance(message, async (page) => {
+    //   const requests = args.join(' ').split(', ');
+    //   if (requests.length > MAX_USER_REQUESTS) {
+    //     return await message.reply(`Please ask for ${MAX_USER_REQUESTS} tracks at most.`);
+    //   }
+
+    //   const responses = [];
+    //   for (const request of requests) {
+    //     responses.push(await fetchTrackInfo({command, page, searchTerm: request, isExplicitSearch: true}));
+    //   }
+
+    //   return await message.reply(responses.join('\n'));
+    // });
   });
 });
 
