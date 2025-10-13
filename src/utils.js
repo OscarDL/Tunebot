@@ -10,6 +10,12 @@ const MAX_USER_REQUESTS = 3;
 const MAX_SONG_REQUESTS = 10;
 const MAX_COVER_REQUESTS = 1;
 
+export const getEmbeddedTrackLink = (track) => {
+  const {title, artists, trackId} = track;
+  const trackText = `**${title}** by ${artists.join(', ')}`;
+  return `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
+};
+
 export const checkMaxRequests = async (command, nbRequests, isRequestingSongs) => {
   switch (command) {
     case 'cover': {

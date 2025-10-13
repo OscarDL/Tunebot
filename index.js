@@ -11,7 +11,7 @@ import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.j
 import { getSpotifyTrack, searchSpotifyTrack } from './src/spotify/search.js';
 // import { fetchTrackInfo } from './src/tunebat/index.js';
 // import { runTunebatBrowserInstance } from './src/tunebat/browser.js';
-import { checkMaxRequests, repeatTypingDuringCommand } from './src/utils.js';
+import { checkMaxRequests, getEmbeddedTrackLink, repeatTypingDuringCommand } from './src/utils.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
 
 dotenv.config();
@@ -109,14 +109,12 @@ client.on('messageCreate', async (message) => {
   const getTrackMessage = ({presence, apiTrack}) => {
     if (apiTrack) {
       const {name: title, artists, id: trackId} = apiTrack;
-      const trackText = `**${title}** by ${artists.map((a) => a.name).join(', ')}`;
-      return `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
+      return getEmbeddedTrackLink({title, artists: artists.map((a) => a.name), trackId});
     }
 
     if (typeof presence === 'string') return presence;
     const {details: title, state: artists, syncId: trackId} = presence;
-    const trackText = `**${title}** by ${artists.replaceAll(';', ',')}`;
-    return `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
+    return getEmbeddedTrackLink({title, artists: artists.split(';'), trackId});
   };
 
   // the rest of the commands are for tunebat
@@ -218,8 +216,8 @@ client.on('messageCreate', async (message) => {
 
           return await message.reply({
             flags: [MessageFlags.SuppressNotifications],
-            content: tracks.map((track) => track.apiTrack).map((track) => {
-              return `**${track.name}** by ${track.artists.map((a) => a.name).join(', ')} ${
+            content: spotifyTracks.map((track) => track.apiTrack).map(({name, trackId, ...track}) => {
+              return `<${getEmbeddedTrackLink({name, artists: track.artists.map((a) => a.name), trackId})}> ${
                 command === 'duration'
                   ? `lasts ${Math.floor(track.duration_ms / 60000)}:${String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')} minutes.`
                   : `has a popularity score of **${track.popularity}%** on Spotify.`
