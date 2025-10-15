@@ -1,4 +1,4 @@
-export const getConvertedTemperature = (message, input) => {
+export const getConvertedTemperature = async (message, input) => {
   const temp = Number(input.replace(/[^0-9.]/g, '')) || 0;
   const unit = input.slice(-1).toUpperCase();
   if (!temp) return 'Please provide a temperature.';
@@ -8,5 +8,5 @@ export const getConvertedTemperature = (message, input) => {
   const fahrenheit = isF ? temp : temp * 9 / 5 + 32;
 
   const result = Math.round((isF ? celsius : fahrenheit) * 100) / 100 + (isF ? '°C' : '°F');
-  return message.reply(`${temp}°${unit} is ${result}.`);
+  return await message.reply(`${temp}°${unit} is ${result}.`);
 };

@@ -51,6 +51,6 @@ export const fixEmbeddedLink = async (message) => {
     return baseUrl(url, i);
   }).join('')) {
     await message.suppressEmbeds();
-    return message.reply(reply.replaceAll(')[', ') \u2014 ['));
+    return await message.reply(reply.replaceAll(')[', ') \u2014 ['));
   }
 };
