@@ -11,7 +11,7 @@ export const setLastfmUsername = async (message) => {
   // Check if the user already exists in the file
   const existingUserIndex = users.findIndex((user) => user.discordId === userId);
   if (existingUserIndex !== -1) {
-    return message.reply("You've already set your last.fm username up, idiot.");
+    return await message.reply('Your last.fm username is already set up, idiot.');
   }
 
   const lastfmSession = await initiateLogin(message);
@@ -33,7 +33,29 @@ export const setLastfmUsername = async (message) => {
 
   // Write updated user back to the file
   fs.writeFileSync('src/lastfm/users.json', JSON.stringify(users, null, 2));
-  message.channel.send(`You have successfully authorized the bot! Your last.fm username is ${lastfmSession.name}.`);
+  await message.channel.send(
+    `Bot authorization successful! Your last.fm username is saved as **${lastfmSession.name}**.`
+    // + `\nYou can now use the \`opheliafix\` command to re-scrobble tracks impacted by the Ophelia discography redistribution.`
+    // + `\n\n⚠️ To also unscrobble your incorrect scrobbles, please reply at any time with a valid session ID token (send it using \`Upload as File\` if it's too long).`
+    // + `\nHere's a [screenshot explaining how to get your session ID token](https://i.imgur.com/84owYIB.png) (only possible on a computer)`
+    // + `\n\nThis is entirely optional, but recommended if you want to keep your scrobble count accurate. If you don't want to provide a session ID token, just ignore this message.`
+  );
+};
+
+export const checkForLastfmSessionIdToken = async (message) => {
+  const userId = message.author.id;
+  const tokenRegex = /\./i;
+  const tokenMatch = message.content.match(tokenRegex);
+
+  if (tokenMatch) {
+    const sessionId = tokenMatch[0];
+    const user = users.find((user) => user.discordId === userId);
+    if (user) {
+      user.lastfm.sessionId = sessionId;
+      fs.writeFileSync('src/lastfm/users.json', JSON.stringify(users, null, 2));
+      await message.channel.send(`Session ID token saved successfully!`);
+    }
+  }
 };
 
 export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
@@ -43,7 +65,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
   const user = users.find((user) => user.discordId === userId);
 
   if (!user) {
-    return message.reply('You need to set your last.fm username first using the `setlastfm` command.');
+    return await message.reply('You need to set your last.fm username first using the `setlastfm` command.');
   }
 
   let recentsUrl = `${LASTFM_API_URL}?method=user.getrecenttracks&user=${user.lastfm.username}&api_key=${process.env.LASTFM_API_KEY}&format=json&limit=200`;
@@ -52,7 +74,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
   const date = timePeriod ? new Date(timePeriod) : new Date();
 
   if (isNaN(date)) {
-    return message.reply('Invalid date format. Please provide a valid date.');
+    return await message.reply('Invalid date format. Please provide a valid date.');
   }
 
   // if we're in early January and the date entered is in late December, use previous year
@@ -67,7 +89,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
 
   // last.fm doesn't allow scrobbling before 14 days ago (or equal to make it easier)
   if (Date.now() - date.getTime() >= 14 * 24 * 60 * 60 * 1000) {
-    return message.reply('You cannot fix scrobbles from 2 weeks ago or earlier.');
+    return await message.reply('You cannot fix scrobbles from 2 weeks ago or earlier.');
   }
 
   // use the UNIX timestamps for the start and end of the day 
@@ -79,13 +101,13 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
     const response = await fetch(recentsUrl);
     const data = await response.json();
     if (data.error) {
-      return message.reply(`Error: ${data.message}`);
+      return await message.reply(`Error: ${data.message}`);
     }
 
     console.log(data.recenttracks['@attr'].total + ' scrobbles');
     const tracks = [data.recenttracks.track].flat(1).filter((track) => !!track.date);
     if (!tracks || tracks.length === 0) {
-      return message.reply('No scrobbles found for the specified date.');
+      return await message.reply('No scrobbles found for the specified date.');
     }
 
     for (const track of tracks) {
@@ -206,9 +228,9 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
       });
     }
 
-    message.reply('All scrobbles have been fixed for the specified date.');
+    await message.reply('All scrobbles have been fixed for the specified date.');
   } catch (error) {
     console.error('Error fetching scrobbles:', error);
-    message.reply('An error occurred while fetching your scrobbles.');
+    await message.reply('An error occurred while fetching your scrobbles.');
   }
 };

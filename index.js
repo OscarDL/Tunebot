@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { Client, IntentsBitField, MessageFlags } from 'discord.js';
+import { ChannelType, Client, IntentsBitField, MessageFlags, Partials } from 'discord.js';
 
 import { getRandomBingoCard } from './src/bingo/index.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
@@ -37,7 +37,7 @@ const COMMANDS = [
   /* --- create bingo card command --- */
   'bingo',
   /* --- set lastfm username command --- */
-  // 'setlastfm',
+  'setlastfm',
   /* --- fix ophelia scrobbles --- */
   // 'opheliafix',
 ];
@@ -52,8 +52,12 @@ const client = new Client({
     IntentsBitField.Flags.Guilds,
     IntentsBitField.Flags.GuildMembers,
     IntentsBitField.Flags.GuildMessages,
-    IntentsBitField.Flags.MessageContent,
     IntentsBitField.Flags.GuildPresences,
+    IntentsBitField.Flags.MessageContent,
+    IntentsBitField.Flags.DirectMessages,
+  ],
+  partials: [
+    Partials.Channel,
   ],
 });
 
@@ -61,11 +65,15 @@ const client = new Client({
 // --- CLIENT EVENTS --- //
 
 
-client.on('ready', () => {
+client.on('clientReady', () => {
   console.log(`Logged in as ${client.user.tag}!`);
 });
 
 client.on('messageCreate', async (message) => {
+  if (message.channel.type === ChannelType.DM && !message.author.bot) {
+    // return await checkForLastfmSessionIdToken(message);
+  }
+
   const isMessageCommand = () => {
     const prefix = message.content[0];
     const command = message.content.slice(1).toLowerCase().split(' ')[0];
@@ -85,7 +93,7 @@ client.on('messageCreate', async (message) => {
   const content = message.content.slice(1).toLowerCase().split(' ');
   const [command, ...args] = content;
 
-  message.channel.sendTyping();
+  await message.channel.sendTyping();
 
   // fix ophelia scrobbles command
   if (command === 'opheliafix') {
@@ -114,10 +122,10 @@ client.on('messageCreate', async (message) => {
 
     if (typeof presence === 'string') return presence;
     const {details: title, state: artists, syncId: trackId} = presence;
-    return getEmbeddedTrackLink({title, artists: artists.split(';'), trackId});
+    return getEmbeddedTrackLink({title, artists: artists.split('; '), trackId});
   };
 
-  // the rest of the commands are for tunebat
+  // the rest of the commands are for music commands
   await repeatTypingDuringCommand(message, async () => {
     try {
       const tracks = [];
@@ -125,6 +133,7 @@ client.on('messageCreate', async (message) => {
       const isSelfAsk = !args || args.length === 0 ||
         (args.length === 1 && args[0] === `<@${message.author.id}>`);
 
+      const isUserRequest = args && args.length > 0 && args.some(arg => /(.)*<@\d+>(.)*/.test(arg));
       const isSpecificSongRequest = args && args.length > 0 && args.some(arg => /(.)*<@\d+>(.)*/.test(arg)) === false;
 
       if (isSelfAsk) {
@@ -134,7 +143,7 @@ client.on('messageCreate', async (message) => {
         });
       }
 
-      else if (!isSpecificSongRequest) {
+      else if (isUserRequest) {
         const {mentions} = message;
         const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
 
@@ -152,7 +161,7 @@ client.on('messageCreate', async (message) => {
         }
       }
 
-      else {
+      else if (isSpecificSongRequest) {
         const requests = args.join(' ').split(', ');
         await checkMaxRequests(command, requests.length, true);
 

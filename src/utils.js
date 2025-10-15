@@ -10,8 +10,8 @@ const MAX_USER_REQUESTS = 3;
 const MAX_SONG_REQUESTS = 10;
 const MAX_COVER_REQUESTS = 1;
 
-export const getEmbeddedTrackLink = (track) => {
-  const {title, artists, trackId} = track;
+export const getEmbeddedTrackLink = (details) => {
+  const {title, artists, trackId} = details;
   const trackText = `**${title}** by ${artists.join(', ')}`;
   return `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
 };
