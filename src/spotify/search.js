@@ -26,7 +26,7 @@ export const searchSpotifyTrack = async (q) => {
   }
 
   const [titleOrArtist, artistOrTitle] = query.split(' | ').map((s) => s.trim().toLowerCase());
-  return scoredTracks.find((item) => {
+  return data.tracks.items.find((item) => {
     const title = cleanWordsFromTrackName(item.name.toLowerCase());
     const artists = item.artists.map((a) => a.name.toLowerCase());
     return (title === titleOrArtist && artists.includes(artistOrTitle)) ||
