@@ -176,10 +176,10 @@ client.on('messageCreate', async (message) => {
         case 's':
         case 'np':
         case 'fm':
-          return await message.reply({
-            flags: [MessageFlags.SuppressNotifications],
-            content: tracks.map(getTrackMessage).join('\n'),
-          });
+          // return await message.reply({
+          //   flags: [MessageFlags.SuppressNotifications],
+          //   content: tracks.map(getTrackMessage).join('\n'),
+          // });
 
         case 'fxs':
         case 'fxnp':
