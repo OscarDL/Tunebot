@@ -4,10 +4,12 @@ import { ChannelType, Client, IntentsBitField, Partials } from 'discord.js';
 import { getRandomBingoCard } from './src/bingo/index.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
+import { isUserSavedAsLastfmUser } from './src/lastfm/utils.js';
 import { fixEmbeddedLink } from './src/linkfix/index.js';
 import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
-import { handleSpotifyCommand } from './src/spotify/handler.js';
-import { COMMANDS, getCommandTypeFromCommand } from './src/types.js';
+import { handleCommandWithSpotify } from './src/spotify/handler.js';
+import { COMMANDS } from './src/types.js';
+import { repeatTypingDuringCommand } from './src/utils.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
 
 dotenv.config();
@@ -81,19 +83,13 @@ client.on('messageCreate', async (message) => {
   // random bingo card creation
   if (command === 'bingo') return await getRandomBingoCard(message);
 
-  // set lastfm username command
   if (command === 'setlastfm') return await setLastfmUsername(message, args[0]);
 
   // handle spotify related commands
-  if (getCommandTypeFromCommand(command) === 'music') {
+  if (COMMANDS.includes(command)) {
+    const isLastfmUser = isUserSavedAsLastfmUser(message.author.id);
     return await repeatTypingDuringCommand(message, async () => {
-      await handleSpotifyCommand(message, command, args);
-    });
-  }
-
-  if (getCommandTypeFromCommand(command) === 'lastfm') {
-    return await repeatTypingDuringCommand(message, async () => {
-      await handleLastfmCommand(message, command, args);
+      await handleCommandWithSpotify(message, command, args, isLastfmUser);
     });
   }
 });

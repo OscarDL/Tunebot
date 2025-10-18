@@ -4,32 +4,38 @@ export const repeatTypingDuringCommand = async (message, callback) => {
   return clearInterval(typingInterval);
 };
 
-export const getNowPlayingPrefix = (isSelfAsk, userId) => isSelfAsk ? '' : `**<@${userId}>**: `;
-
 const MAX_USER_REQUESTS = 3;
 const MAX_SONG_REQUESTS = 10;
 const MAX_COVER_REQUESTS = 1;
 
-export const getEmbeddedTrackLink = (details) => {
+export const getEmbeddedTrackLink = (details, userId) => {
   const {title, artists, trackId} = details;
+  const prefix = userId ? `**<@${userId}>**: ` : '';
   const trackText = `**${title}** by ${artists.join(', ')}`;
-  return `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
+  return prefix + `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
 };
 
 export const checkMaxRequests = async (command, nbRequests, isRequestingSongs) => {
   switch (command) {
     case 'cover': {
-      if (nbRequests.length > MAX_COVER_REQUESTS) {
+      if (nbRequests > MAX_COVER_REQUESTS) {
         return await message.reply(`Please ask for ${MAX_COVER_REQUESTS} cover${MAX_COVER_REQUESTS > 1 && 's'} at most.`);
       }
       break;
     }
     default: {
       const maxRequests = isRequestingSongs ? MAX_SONG_REQUESTS : MAX_USER_REQUESTS;
-      if (nbRequests.length > maxRequests) {
+      if (nbRequests > maxRequests) {
         return await message.reply(`Please ask for ${maxRequests} track${maxRequests > 1 && 's'} at most.`);
       }
       break;
     }
   }
 };
+
+export const isCommandSelfAsk = (message, args) =>
+  !args || args.length === 0 || (args.length === 1 && args[0] === `<@${message.author.id}>`);
+export const isCommandUserRequest = (args) =>
+  args && args.length > 0 && args.some(arg => /(.)*<@\d+>(.)*/.test(arg));
+export const isCommandSpecificSongRequest = (args) =>
+  args && args.length > 0 && args.some(arg => /(.)*<@\d+>(.)*/.test(arg)) === false;

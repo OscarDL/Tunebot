@@ -33,13 +33,14 @@ export const setLastfmUsername = async (message) => {
 
   // Write updated user back to the file
   fs.writeFileSync('src/lastfm/users.json', JSON.stringify(users, null, 2));
-  await message.channel.send(
-    `Bot authorization successful! Your last.fm username is saved as **${lastfmSession.name}**.`
+  const reply = `Bot authorization successful! Your last.fm username is saved as **${lastfmSession.name}**.`
+    + `\nCommands you send will now use last.fm if you don't use Spotify or share your Discord presence in real time.`
     // + `\nYou can now use the \`opheliafix\` command to re-scrobble tracks impacted by the Ophelia discography redistribution.`
     // + `\n\n⚠️ To also unscrobble your incorrect scrobbles, please reply at any time with a valid session ID token (send it using \`Upload as File\` if it's too long).`
     // + `\nHere's a [screenshot explaining how to get your session ID token](https://i.imgur.com/84owYIB.png) (only possible on a computer)`
-    // + `\n\nThis is entirely optional, but recommended if you want to keep your scrobble count accurate. If you don't want to provide a session ID token, just ignore this message.`
-  );
+    // + `\n\nThis is entirely optional, but recommended if you want to keep your scrobble count accurate. If you don't want to provide a session ID token, just ignore this message.`;
+  await message.author.send(reply);
+  return await message.channel.send(reply);
 };
 
 export const checkForLastfmSessionIdToken = async (message) => {

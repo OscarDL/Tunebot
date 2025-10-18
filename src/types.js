@@ -1,33 +1,25 @@
-export const COMMAND_TYPES = {
+export const COMMANDS = [
   /* --- music commands --- */
-  'music': [
-    's', 'fxs', 'fm', 'fxfm', 'np', 'fxnp',
-    'cover',
-    'duration',
-    'pop',
-  ],
-  /* --- lastfm commands --- */
-  'lastfm': [
-    'wk', 'w', 'whoknows',
-    'wkt', 'wt', 'whoknowstrack',
-    'setlastfm',
-    'opheliafix',
-  ],
-  'utils': [
-    /* --- vibin dips count --- */
-    'vibindips',
-    /* --- temperature conversion --- */
-    'temp',
-    /* --- create bingo card --- */
-    'bingo',
-  ],
-};
-
-export const COMMANDS = Object.values(COMMAND_TYPES).flat();
-
-export const getCommandTypeFromCommand = (command) => {
-  for (const [type, commands] of Object.entries(COMMAND_TYPES)) {
-    if (commands.includes(command)) return type;
-  }
-  return null;
-}
+  's',
+  'fxs',
+  'fm',
+  'fxfm',
+  'np',
+  'fxnp',
+  'cover',
+  'duration',
+  'pop',
+  // 'bpm',  // disabled until tunebat works again
+  // 'key',  // disabled until tunebat works again
+  // 'info', // disabled until tunebat works again
+  /* --- vibin dips count command --- */
+  'vibindips',
+  /* --- temperature conversion --- */
+  'temp',
+  /* --- create bingo card command --- */
+  'bingo',
+  /* --- set lastfm username command --- */
+  'setlastfm',
+  /* --- fix ophelia scrobbles --- */
+  // 'opheliafix',
+];

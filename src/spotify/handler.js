@@ -1,49 +1,69 @@
 import { MessageFlags } from 'discord.js';
-import { getServerUser, getSpotifyPresence } from '../discord/index.js';
+import { getServerUser, getSpotifyPresence, isUserListeningToSpotify } from '../discord/index.js';
+import { searchLastfmTrack } from '../lastfm/search.js';
+import { isUserSavedAsLastfmUser } from '../lastfm/utils.js';
 import { getSpotifyTrack, searchSpotifyTrack } from './search.js';
-import { checkMaxRequests, getEmbeddedTrackLink } from '../utils.js';
+import { checkMaxRequests, getEmbeddedTrackLink, isCommandSelfAsk, isCommandSpecificSongRequest, isCommandUserRequest } from '../utils.js';
 
-const getTrackMessage = ({presence, apiTrack}) => {
-  if (apiTrack) {
-    const {name: title, artists, id: trackId} = apiTrack;
-    return getEmbeddedTrackLink({title, artists: artists.map((a) => a.name), trackId});
+const getTrackMessage = ({presence, spotify, userId}) => {
+  if (spotify) {
+    const {name: title, artists, id: trackId} = spotify;
+    return getEmbeddedTrackLink({title, artists: artists.map((a) => a.name), trackId}, userId);
   }
 
   if (typeof presence === 'string') return presence;
   const {details: title, state: artists, syncId: trackId} = presence;
-  return getEmbeddedTrackLink({title, artists: artists.split('; '), trackId});
+  return getEmbeddedTrackLink({title, artists: artists.split('; '), trackId}, userId);
 };
 
-export const handleSpotifyCommand = async (message, command, args) => {
+export const handleCommandWithSpotify = async (message, command, args) => {
+  const shouldFallbackToLastfm = (userId, presence) =>
+    isUserSavedAsLastfmUser(userId) && !isUserListeningToSpotify(presence);
+
   try {
     const tracks = [];
-
-    const isSelfAsk = !args || args.length === 0 ||
-      (args.length === 1 && args[0] === `<@${message.author.id}>`);
-
-    const isUserRequest = args && args.length > 0 && args.some(arg => /(.)*<@\d+>(.)*/.test(arg));
-    const isSpecificSongRequest = args && args.length > 0 && args.some(arg => /(.)*<@\d+>(.)*/.test(arg)) === false;
+    const isSelfAsk = isCommandSelfAsk(message, args);
+    const isUserRequest = isCommandUserRequest(args);
+    const isSpecificSongRequest = isCommandSpecificSongRequest(args);
 
     if (isSelfAsk) {
       const {user, presence} = message.member;
-      tracks.push({
-        presence: await getSpotifyPresence(user, presence, isSelfAsk),
-      });
+
+      if (shouldFallbackToLastfm(user.id, presence)) {
+        tracks.push({
+          spotify: await searchSpotifyTrack(
+            await searchLastfmTrack(message, user.id),
+          ),
+        });
+      } else {
+        tracks.push({
+          presence: await getSpotifyPresence(user, presence, true),
+        });
+      }
     }
 
     else if (isUserRequest) {
       const {mentions} = message;
       const filteredMentions = mentions.users.filter((user) => user.id !== mentions.repliedUser?.id);
 
-      if (filteredMentions.size > 0) {
-        await checkMaxRequests(command, filteredMentions.size, false);
+      if (filteredMentions.size === 0) return;
 
-        const users = await Promise.all(
-          filteredMentions.map((mention) => getServerUser(message, mention)),
-        );
-        for (const {user, presence} of users) {
+      await checkMaxRequests(command, filteredMentions.size, false);
+      const users = await Promise.all(
+        filteredMentions.map((mention) => getServerUser(message, mention)),
+      );
+
+      for (const {user, presence} of users) {
+        const userId = user.id;
+        if (shouldFallbackToLastfm(userId, presence)) {
+          const spotify = await searchSpotifyTrack(
+            await searchLastfmTrack(message, userId),
+          );
+          tracks.push({ spotify, userId });
+        } else {
           tracks.push({
             presence: await getSpotifyPresence(user, presence),
+            userId,
           });
         }
       }
@@ -55,10 +75,12 @@ export const handleSpotifyCommand = async (message, command, args) => {
 
       for (const request of requests) {
         tracks.push({
-          apiTrack: await searchSpotifyTrack(request),
+          spotify: await searchSpotifyTrack(request),
         });
       }
     }
+
+    const filteredTracks = tracks.filter((track) => track.presence || track.spotify || track.lastfm);
 
     switch (command) {
       case 's':
@@ -66,54 +88,56 @@ export const handleSpotifyCommand = async (message, command, args) => {
       case 'fm':
         // return await message.reply({
         //   flags: [MessageFlags.SuppressNotifications],
-        //   content: tracks.map(getTrackMessage).join('\n'),
+        //   content: filteredTracks.map(getTrackMessage).join('\n'),
         // });
 
       case 'fxs':
       case 'fxnp':
       case 'fxfm': {
+        console.log('BABABA', filteredTracks)
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
-          content: tracks.map(getTrackMessage).join('\n')
+          content: filteredTracks.map(getTrackMessage).join('\n')
             .replaceAll('https://open.spotify.com', 'https://play.spotify.com')
         });
       }
 
       case 'cover': {
-        if (tracks.some((track) => typeof track === 'string')) {
+        if (filteredTracks.some((track) => typeof track === 'string')) {
           return await message.reply({
             flags: [MessageFlags.SuppressNotifications],
-            content: 'You can only request the cover of a track that is currently playing and not a local file.',
+            content: 'You can only request the cover of a track that isLastfmUser currently playing and not a local file.',
           });
         }
 
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
-          content: tracks[0].presence.assets.largeImage.replace('spotify:', 'https://i.scdn.co/image/')
-            ?? tracks[0].apiTrack.album.images[0].url,
+          content: filteredTracks[0].presence.assets.largeImage.replace('spotify:', 'https://i.scdn.co/image/')
+            ?? filteredTracks[0].spotify.album.images[0].url
+            ?? filteredTracks[0].lastfm.image,
         });
       }
 
       case 'duration':
       case 'pop': {
-        if (tracks.some((track) => typeof track === 'string')) {
+        if (filteredTracks.some((track) => typeof track === 'string')) {
           return await message.reply({
             flags: [MessageFlags.SuppressNotifications],
-            content: `You can only request the ${command === 'duration' ? 'duration' : 'popularity'} of a track that is currently playing and not a local file.`,
+            content: `You can only request the ${command === 'duration' ? 'duration' : 'popularity'} of a track that isLastfmUser currently playing and not a local file.`,
           });
         }
 
         const spotifyTracks = JSON.parse(JSON.stringify(tracks));
         for (const trackIndex in tracks) {
           if (tracks[trackIndex].presence) {
-            spotifyTracks[trackIndex].apiTrack =
+            spotifyTracks[trackIndex].spotify =
               await getSpotifyTrack(tracks[trackIndex].presence.syncId);
           }
         }
 
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
-          content: spotifyTracks.map((track) => track.apiTrack).map(({name, trackId, ...track}) => {
+          content: spotifyTracks.map((track) => track.spotify).map(({name, trackId, ...track}) => {
             return `<${getEmbeddedTrackLink({name, artists: track.artists.map((a) => a.name), trackId})}> ${
               command === 'duration'
                 ? `lasts ${Math.floor(track.duration_ms / 60000)}:${String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')} minutes.`

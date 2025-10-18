@@ -1,3 +1,5 @@
+import users from './users.json' with { type: 'json' };
+
 export const LASTFM_API_URL = 'http://ws.audioscrobbler.com/2.0/';
 
 export const BLACKLISTED_TITLES = [
@@ -34,3 +36,7 @@ export const WHITELISTED_ARTISTS = [
   'wooli',
   'xavi',
 ];
+
+export const isUserSavedAsLastfmUser = (discordId) => {
+  return users.some((user) => user.discordId === discordId);
+};
