@@ -4,7 +4,6 @@ import { ChannelType, Client, IntentsBitField, Partials } from 'discord.js';
 import { getRandomBingoCard } from './src/bingo/index.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
-import { isUserSavedAsLastfmUser } from './src/lastfm/utils.js';
 import { fixEmbeddedLink } from './src/linkfix/index.js';
 import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
 import { handleCommandWithSpotify } from './src/spotify/handler.js';
@@ -67,13 +66,6 @@ client.on('messageCreate', async (message) => {
 
   await message.channel.sendTyping();
 
-  // fix ophelia scrobbles command
-  if (command === 'opheliafix') {
-    return await repeatTypingDuringCommand(message, async () => {
-      await fixOpheliaScrobblesForTimePeriod(message, args.join(' '));
-    });
-  }
-
   // vibin dips command
   if (command === 'vibindips') return await getDips(message);
 
@@ -83,15 +75,20 @@ client.on('messageCreate', async (message) => {
   // random bingo card creation
   if (command === 'bingo') return await getRandomBingoCard(message);
 
+  // set lastfm username command
   if (command === 'setlastfm') return await setLastfmUsername(message, args[0]);
 
-  // handle spotify related commands
-  if (COMMANDS.includes(command)) {
-    const isLastfmUser = isUserSavedAsLastfmUser(message.author.id);
+  // fix ophelia scrobbles command
+  if (command === 'opheliafix') {
     return await repeatTypingDuringCommand(message, async () => {
-      await handleCommandWithSpotify(message, command, args, isLastfmUser);
+      await fixOpheliaScrobblesForTimePeriod(message, args.join(' '));
     });
   }
+
+  // the rest of the commands are spotify related commands
+  return await repeatTypingDuringCommand(message, async () => {
+    await handleCommandWithSpotify(message, command, args);
+  });
 });
 
 client.login(process.env.TOKEN);

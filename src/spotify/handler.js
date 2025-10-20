@@ -8,7 +8,7 @@ import { checkMaxRequests, getEmbeddedTrackLink, isCommandSelfAsk, isCommandSpec
 const getTrackMessage = ({presence, spotify, userId}) => {
   if (spotify) {
     const {name: title, artists, id: trackId} = spotify;
-    return getEmbeddedTrackLink({title, artists: artists.map((a) => a.name), trackId}, userId);
+    return getEmbeddedTrackLink({title, artists, trackId}, userId);
   }
 
   if (typeof presence === 'string') return presence;
@@ -80,7 +80,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
       }
     }
 
-    const filteredTracks = tracks.filter((track) => track.presence || track.spotify || track.lastfm);
+    const filteredTracks = tracks.filter((track) => track.presence ?? track.spotify ?? track.lastfm);
 
     switch (command) {
       case 's':
@@ -94,7 +94,6 @@ export const handleCommandWithSpotify = async (message, command, args) => {
       case 'fxs':
       case 'fxnp':
       case 'fxfm': {
-        console.log('BABABA', filteredTracks)
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
           content: filteredTracks.map(getTrackMessage).join('\n')
@@ -112,9 +111,9 @@ export const handleCommandWithSpotify = async (message, command, args) => {
 
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
-          content: filteredTracks[0].presence.assets.largeImage.replace('spotify:', 'https://i.scdn.co/image/')
-            ?? filteredTracks[0].spotify.album.images[0].url
-            ?? filteredTracks[0].lastfm.image,
+          content: filteredTracks[0]?.presence?.assets?.largeImage?.replace('spotify:', 'https://i.scdn.co/image/')
+            ?? filteredTracks[0]?.spotify?.cover
+            ?? filteredTracks[0]?.lastfm?.image,
         });
       }
 
@@ -137,13 +136,12 @@ export const handleCommandWithSpotify = async (message, command, args) => {
 
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
-          content: spotifyTracks.map((track) => track.spotify).map(({name, trackId, ...track}) => {
-            return `<${getEmbeddedTrackLink({name, artists: track.artists.map((a) => a.name), trackId})}> ${
-              command === 'duration'
-                ? `lasts ${Math.floor(track.duration_ms / 60000)}:${String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')} minutes.`
-                : `has a popularity score of **${track.popularity}%** on Spotify.`
-            }`;
-          }).join('\n'),
+          content: spotifyTracks.map((track) => track.spotify).map((track) => (
+            `${getEmbeddedTrackLink(track)} ${command === 'duration'
+              ? `lasts ${Math.floor(track.duration_ms / 60000)}:${String(Math.floor((track.duration_ms % 60000) / 1000)).padStart(2, '0')} minutes.`
+              : `has a popularity score of **${track.popularity}%** on Spotify.`
+            }`
+          )).join('\n'),
         });
       }
     }

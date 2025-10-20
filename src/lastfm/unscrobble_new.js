@@ -50,14 +50,12 @@ const unscrobbleTrack = async (user, track) => {
       });
 
       const data = await response.json();
-      console.log('DATA AAAAA', data);
       // if (data.error) reject('Error deleting ' + JSON.stringify(track) + ' - ' + error);
       // if (JSON.parse(data.body).result === true) {
       //   resolve();
       // } else if (JSON.parse(data.body).result === false) {
       //   reject('Delete returned fail: ' + JSON.stringify(track));
       // } else {
-      //   console.log()
       //   reject('Error deleting ' + JSON.stringify(track) + ' body:' + body);
       // }
       if (data.result === true) {
