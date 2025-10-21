@@ -8,7 +8,7 @@ import { checkMaxRequests, getEmbeddedTrackLink, isCommandSelfAsk, isCommandSpec
 const getTrackMessage = ({presence, spotify, userId}) => {
   if (spotify) {
     const {name: title, artists, id: trackId} = spotify;
-    return getEmbeddedTrackLink({title, artists, trackId}, userId);
+    return getEmbeddedTrackLink({title, artists: artists.map((a) => a.name), trackId}, userId);
   }
 
   if (typeof presence === 'string') return presence;

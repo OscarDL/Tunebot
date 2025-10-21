@@ -9,6 +9,7 @@ const MAX_SONG_REQUESTS = 10;
 const MAX_COVER_REQUESTS = 1;
 
 export const getEmbeddedTrackLink = (details, userId) => {
+  console.log(details);
   const {title, artists, trackId} = details;
   const prefix = userId ? `**<@${userId}>**: ` : '';
   const trackText = `**${title}** by ${artists.join(', ')}`;
