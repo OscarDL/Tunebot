@@ -56,7 +56,7 @@ export const searchSpotifyTrack = async (q) => {
 
     if (!resp.ok) throw new Error('Failed to search track on Spotify.');
     const data = await resp.json();
-    return data.tracks.items[0] ?? null;
+    return spotifyResponseToTrack(data.tracks.items[0]) ?? null;
   } catch (error) {
     console.error(error);
     return await message.reply({

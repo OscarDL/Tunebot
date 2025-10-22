@@ -8,7 +8,7 @@ import { checkMaxRequests, getEmbeddedTrackLink, isCommandSelfAsk, isCommandSpec
 const getTrackMessage = ({presence, spotify, userId}) => {
   if (spotify) {
     const {name: title, artists, id: trackId} = spotify;
-    return getEmbeddedTrackLink({title, artists: artists.map((a) => a.name), trackId}, userId);
+    return getEmbeddedTrackLink({title, artists, trackId}, userId);
   }
 
   if (typeof presence === 'string') return presence;
@@ -48,7 +48,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
 
       if (filteredMentions.size === 0) return;
 
-      await checkMaxRequests(command, filteredMentions.size, false);
+      await checkMaxRequests(message, command, filteredMentions.size, false);
       const users = await Promise.all(
         filteredMentions.map((mention) => getServerUser(message, mention)),
       );
@@ -71,7 +71,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
 
     else if (isSpecificSongRequest) {
       const requests = args.join(' ').split(', ');
-      await checkMaxRequests(command, requests.length, true);
+      if (await checkMaxRequests(message, command, requests.length, true)) return;
 
       for (const request of requests) {
         tracks.push({

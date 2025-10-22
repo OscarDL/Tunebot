@@ -9,27 +9,25 @@ const MAX_SONG_REQUESTS = 10;
 const MAX_COVER_REQUESTS = 1;
 
 export const getEmbeddedTrackLink = (details, userId) => {
-  console.log(details);
   const {title, artists, trackId} = details;
   const prefix = userId ? `**<@${userId}>**: ` : '';
   const trackText = `**${title}** by ${artists.join(', ')}`;
   return prefix + `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
 };
 
-export const checkMaxRequests = async (command, nbRequests, isRequestingSongs) => {
+export const checkMaxRequests = async (message, command, nbRequests, isRequestingSongs) => {
   switch (command) {
     case 'cover': {
       if (nbRequests > MAX_COVER_REQUESTS) {
-        return await message.reply(`Please ask for ${MAX_COVER_REQUESTS} cover${MAX_COVER_REQUESTS > 1 && 's'} at most.`);
+        return await message.reply(`Please ask for ${MAX_COVER_REQUESTS} cover${MAX_COVER_REQUESTS > 1 ? 's' : ''} at most.`);
       }
       break;
     }
     default: {
       const maxRequests = isRequestingSongs ? MAX_SONG_REQUESTS : MAX_USER_REQUESTS;
       if (nbRequests > maxRequests) {
-        return await message.reply(`Please ask for ${maxRequests} track${maxRequests > 1 && 's'} at most.`);
+        return await message.reply(`Please ask for ${maxRequests} track${maxRequests > 1 ? 's' : ''} at most.`);
       }
-      break;
     }
   }
 };
