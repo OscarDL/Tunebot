@@ -15,7 +15,9 @@ const spotifyResponseToTrack = (track) => ({
  * @returns { Promise<Object | null> }
  */
 export const searchSpotifyTrack = async (q) => {
-  if (!q) return null;
+  if (!q) {
+    throw new Error('No song provided for Spotify track search.');
+  }
 
   try {
     const { accessToken } = await getSpotifyAccessToken();
