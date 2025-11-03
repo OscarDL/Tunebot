@@ -81,7 +81,7 @@ client.on('messageCreate', async (message) => {
   // fix ophelia scrobbles command
   if (command === 'opheliafix') {
     return await repeatTypingDuringCommand(message, async () => {
-      await fixOpheliaScrobblesForTimePeriod(message, args.join(' '));
+      await fixOpheliaScrobblesForTimePeriod(message, args);
     });
   }
 

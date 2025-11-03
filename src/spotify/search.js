@@ -60,11 +60,7 @@ export const searchSpotifyTrack = async (q) => {
     const data = await resp.json();
     return spotifyResponseToTrack(data.tracks.items[0]) ?? null;
   } catch (error) {
-    console.error(error);
-    return await message.reply({
-      flags: [MessageFlags.SuppressNotifications],
-      content: error.message || 'An unknown error occurred.',
-    });
+    throw new Error(error.message || 'An unknown error occurred.');
   }
 }
 
@@ -73,14 +69,18 @@ export const searchSpotifyTrack = async (q) => {
  * @returns { Promise<Object> }
  */
 export const getSpotifyTrack = async (trackId) => {
-  const { accessToken } = await getSpotifyAccessToken();
-  const resp = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-    },
-  });
+  try {
+    const { accessToken } = await getSpotifyAccessToken();
+    const resp = await fetch(`https://api.spotify.com/v1/tracks/${trackId}`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+      },
+    });
 
-  if (!resp.ok) throw new Error('Failed to get track from Spotify.');
-  const song = await resp.json();
-  return spotifyResponseToTrack(song);
+    if (!resp.ok) throw new Error('Failed to get track from Spotify.');
+    const song = await resp.json();
+    return spotifyResponseToTrack(song);
+  } catch (error) {
+    throw new Error(error.message || 'An unknown error occurred.');
+  }
 };

@@ -1,4 +1,3 @@
-import { MessageFlags } from 'discord.js';
 import { generateMd5HashSig } from './auth.js';
 import users from './users.json' with { type: 'json' };
 import { LASTFM_API_URL } from './utils.js';
@@ -8,7 +7,7 @@ import { LASTFM_API_URL } from './utils.js';
  * @param { string } userId - user ID
  * @returns { Promise<Object | null> }
  */
-export const searchLastfmTrack = async (message, userId) => {
+export const searchLastfmTrack = async (userId) => {
   try {
     const user = users.find((u) => u.discordId === userId);
     if (!user || !user.lastfm || !user.lastfm.username) {
@@ -29,10 +28,6 @@ export const searchLastfmTrack = async (message, userId) => {
     const track = data.recenttracks.track[0];
     return `${track.artist['#text']} | ${track.name}`;
   } catch (error) {
-    console.error(error);
-    return await message.reply({
-      flags: [MessageFlags.SuppressNotifications],
-      content: error.message || 'An unknown error occurred.',
-    });
+    throw new Error(error.message || 'An unknown error occurred.');
   }
 };

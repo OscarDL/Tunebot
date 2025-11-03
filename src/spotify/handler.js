@@ -3,7 +3,13 @@ import { getServerUser, getSpotifyPresence, isUserListeningToSpotify } from '../
 import { searchLastfmTrack } from '../lastfm/search.js';
 import { isUserSavedAsLastfmUser } from '../lastfm/utils.js';
 import { getSpotifyTrack, searchSpotifyTrack } from './search.js';
-import { checkMaxRequests, getEmbeddedTrackLink, isCommandSelfAsk, isCommandSpecificSongRequest, isCommandUserRequest } from '../utils.js';
+import {
+  checkMaxRequests,
+  getEmbeddedTrackLink,
+  isCommandSelfAsk,
+  isCommandSpecificSongRequest,
+  isCommandUserRequest,
+} from '../utils.js';
 
 const getTrackMessage = ({presence, spotify, userId}) => {
   if (spotify) {
@@ -32,7 +38,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
       if (shouldFallbackToLastfm(user.id, presence)) {
         tracks.push({
           spotify: await searchSpotifyTrack(
-            await searchLastfmTrack(message, user.id),
+            await searchLastfmTrack(user.id),
           ),
         });
       } else {
@@ -57,7 +63,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
         const userId = user.id;
         if (shouldFallbackToLastfm(userId, presence)) {
           const spotify = await searchSpotifyTrack(
-            await searchLastfmTrack(message, userId),
+            await searchLastfmTrack(userId),
           );
           tracks.push({ spotify, userId });
         } else {

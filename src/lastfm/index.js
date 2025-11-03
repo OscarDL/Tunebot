@@ -59,21 +59,18 @@ export const checkForLastfmSessionIdToken = async (message) => {
   }
 };
 
-export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
-  const userId = message.author.id;
-
+export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
   // get user from users storage file
-  const user = users.find((user) => user.discordId === userId);
-
+  const user = users.find((user) => user.discordId === message.author.id);
   if (!user) {
     return await message.reply('You need to set your last.fm username first using the `setlastfm` command.');
   }
 
   let recentsUrl = `${LASTFM_API_URL}?method=user.getrecenttracks&user=${user.lastfm.username}&api_key=${process.env.LASTFM_API_KEY}&format=json&limit=200`;
 
+  const [timePeriod, forceArg] = args.join(' ').split('-');
   // if no time period is provided, use the current day
   const date = timePeriod ? new Date(timePeriod) : new Date();
-
   if (isNaN(date)) {
     return await message.reply('Invalid date format. Please provide a valid date.');
   }
@@ -88,8 +85,9 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
     }
   }
 
+  const forceScrobble = ['-force', '-f'].includes(`-${forceArg}`);
   // last.fm doesn't allow scrobbling before 14 days ago (or equal to make it easier)
-  if (Date.now() - date.getTime() >= 14 * 24 * 60 * 60 * 1000) {
+  if (!forceScrobble && Date.now() - date.getTime() >= 14 * 24 * 60 * 60 * 1000) {
     return await message.reply('You cannot fix scrobbles from 2 weeks ago or earlier.');
   }
 
@@ -192,7 +190,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, timePeriod) => {
               sk: user.lastfm.sessionKey,
               artist: secondMatch.artist,
               track: secondMatch.name,
-              timestamp: track.date.uts,
+              timestamp: forceScrobble ? Date.now() : track.date.uts,
               album: track.album['#text'],
             };
 
