@@ -10,6 +10,12 @@ const spotifyResponseToTrack = (track) => ({
   cover: track.album.images[0]?.url ?? null,
 });
 
+const trackParams = {
+  limit: 1,
+  market: 'US',
+  type: 'track',
+};
+
 /**
  * @param { string | null } q - search query
  * @returns { Promise<Object | null> }
@@ -23,37 +29,46 @@ export const searchSpotifyTrack = async (q) => {
     const { accessToken } = await getSpotifyAccessToken();
     const query = q.toLowerCase().trim();
 
-    const params = new URLSearchParams({
-      q: query,
-      limit: '1',
-      type: 'track',
-    });
     const headers = {
       'Authorization': `Bearer ${accessToken}`,
     };
 
     if (query.includes(' | ')) {
       const [tOrA, aOrT] = query.split(' | ').map((s) => s.trim().toLowerCase());
-      const queryTA = `track:"${tOrA}" artist:"${aOrT}"`;
-      const queryAT = `track:"${aOrT}" artist:"${tOrA}"`;
+      const params1 = new URLSearchParams({
+        ...trackParams,
+        limit: 5, // increase limit to improve chances of finding the correct track
+        q: `track:"${aOrT}" artist:"${tOrA}"`,
+      });
+      const params2 = new URLSearchParams({
+        ...trackParams,
+        limit: 5, // increase limit to improve chances of finding the correct track
+        q: `track:"${tOrA}" artist:"${aOrT}"`,
+      });
 
       const [resp1, resp2] = await Promise.all([
-        fetch(`https://api.spotify.com/v1/search?${params.toString().replace(query, queryTA)}`, {headers}),
-        fetch(`https://api.spotify.com/v1/search?${params.toString().replace(query, queryAT)}`, {headers}),
+        fetch(`https://api.spotify.com/v1/search?${params1.toString()}`, {headers}),
+        fetch(`https://api.spotify.com/v1/search?${params2.toString()}`, {headers}),
       ]);
       const [data1, data2] = await Promise.all([resp1.json(), resp2.json()]);
-      const [track1, track2] = [data1.tracks.items[0], data2.tracks.items[0]];
+      const tracks = [...data1.tracks.items, ...data2.tracks.items];
 
-      const track = [track1, track2].find((item) => {
+      const track = tracks.find((item) => {
         const title = cleanWordsFromTrackName(item.name.toLowerCase());
         const artists = item.artists.map((a) => a.name.toLowerCase());
-        return false ||
+        return (
           (title === cleanWordsFromTrackName(tOrA) && artists.includes(aOrT)) ||
-          (title === cleanWordsFromTrackName(aOrT) && artists.includes(tOrA));
+          (title === cleanWordsFromTrackName(aOrT) && artists.includes(tOrA))
+        );
       });
-      return track ? spotifyResponseToTrack(track) : null;
+
+      if (!track) {
+        throw new Error('No matching track found on Spotify.');
+      }
+      return spotifyResponseToTrack(track);
     }
 
+    const params = new URLSearchParams({ q: query, ...trackParams });
     const resp = await fetch(`https://api.spotify.com/v1/search?${params.toString()}`, {headers});
 
     if (!resp.ok) throw new Error('Failed to search track on Spotify.');
