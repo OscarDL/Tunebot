@@ -53,8 +53,10 @@ export const initiateLogin = async (message) => {
   }
 
   const authRequestUrl = `http://www.last.fm/api/auth/?api_key=${process.env.LASTFM_API_KEY}&token=${token}`;
-  await message.author.send(`Please authorize the bot within 5 minutes by clicking [this link](${authRequestUrl}).`);
-  await message.reply(`Check your DMs for the link to authorize the bot.`);
+  const authRequestMessage = `Please authorize the bot within 5 minutes by clicking [this link](${authRequestUrl}).`;
+  await message.author.send(authRequestMessage)
+    .then(() => message.reply(`Check your DMs for the link to authorize the bot.`))
+    .catch(() => message.reply(authRequestMessage)); // Send in channel if DMs are closed
 
   // check every 5 seconds if the user has authorized the bot
   let attempts = 0;

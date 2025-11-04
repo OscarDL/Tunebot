@@ -39,7 +39,7 @@ export const setLastfmUsername = async (message) => {
     // + `\n\n⚠️ To also unscrobble your incorrect scrobbles, please reply at any time with a valid session ID token (send it using \`Upload as File\` if it's too long).`
     // + `\nHere's a [screenshot explaining how to get your session ID token](https://i.imgur.com/84owYIB.png) (only possible on a computer)`
     // + `\n\nThis is entirely optional, but recommended if you want to keep your scrobble count accurate. If you don't want to provide a session ID token, just ignore this message.`;
-  await message.author.send(reply);
+  await message.author.send(reply).catch(() => {}); // Ignore if DMs are closed
   return await message.channel.send(reply);
 };
 
