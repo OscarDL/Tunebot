@@ -21,5 +21,5 @@ export const COMMANDS = [
   /* --- set lastfm username command --- */
   'setlastfm',
   /* --- fix ophelia scrobbles --- */
-  // 'opheliafix',
+  'opheliafix',
 ];

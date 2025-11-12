@@ -10,6 +10,7 @@ import { handleCommandWithSpotify } from './src/spotify/handler.js';
 import { COMMANDS } from './src/types.js';
 import { repeatTypingDuringCommand } from './src/utils.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
+import users from './src/lastfm/users.json' with { type: 'json' };
 
 dotenv.config();
 
@@ -80,6 +81,9 @@ client.on('messageCreate', async (message) => {
 
   // fix ophelia scrobbles command
   if (command === 'opheliafix') {
+    const user = users.find(u => u.discordId === message.author.id);
+    if (!user || !user.opheliafix) return;
+
     return await repeatTypingDuringCommand(message, async () => {
       await fixOpheliaScrobblesForTimePeriod(message, args);
     });
