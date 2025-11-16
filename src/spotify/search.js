@@ -27,7 +27,7 @@ const trackParams = {
 };
 
 /**
- * @param { string | null } q - search query
+ * @param { string | null } q
  * @returns { Promise<ReturnType<typeof spotifyResponseToTrack> | null> }
  */
 export const searchSpotifyTrack = async (q) => {
@@ -90,7 +90,7 @@ export const searchSpotifyTrack = async (q) => {
 }
 
 /**
- * @param { string } trackId - Spotify track ID
+ * @param { string } trackId
  * @returns { Promise<ReturnType<typeof spotifyResponseToTrack>> }
  */
 export const getSpotifyTrack = async (trackId) => {
@@ -111,7 +111,7 @@ export const getSpotifyTrack = async (trackId) => {
 };
 
 /**
- * @param { Array<string> } trackIds - Array of track IDs
+ * @param { Array<string> } trackIds
  * @returns { Promise<Array<{
  *   id: string;
  *   href: string;
@@ -125,7 +125,7 @@ export const getSpotifyTrack = async (trackId) => {
  *   speechiness: number;
  *   tempo: number;
  *   valence: number;
- * }>> }
+ * } | null>> }
  */
 export const getSpotifyTrackAudioFeatures = async (trackIds) => {
   try {
@@ -133,7 +133,8 @@ export const getSpotifyTrackAudioFeatures = async (trackIds) => {
 
     if (!resp.ok) throw new Error('Failed to get audio features from Spotify.');
     const data = await resp.json();
-    return data.content;
+
+    return trackIds.map((id) => data.content.find((feature) => feature.href.endsWith(id)) ?? null);
   } catch (error) {
     throw new Error(error.message || 'An unknown error occurred.');
   }

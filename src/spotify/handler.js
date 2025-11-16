@@ -172,7 +172,9 @@ export const handleCommandWithSpotify = async (message, command, args) => {
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
           content: tracksWithAudioFeatures.map((track) => (
-            `${getEmbeddedTrackLink(track.spotify)} has a BPM of **${Math.round(track.features.tempo)}**.`
+            track.features
+              ? `${getEmbeddedTrackLink(track.spotify)} has a BPM of **${Math.round(track.features.tempo)}**.`
+              : `Could not get audio features for ${getEmbeddedTrackLink(track.spotify)}.`
           )).join('\n'),
         });
       }
@@ -183,7 +185,9 @@ export const handleCommandWithSpotify = async (message, command, args) => {
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
           content: tracksWithAudioFeatures.map((track) => (
-            `${getEmbeddedTrackLink(track.spotify)} is written in **${getPitchClassNotation(track.features.key)}**.`
+            track.features
+              ? `${getEmbeddedTrackLink(track.spotify)} is written in **${getPitchClassNotation(track.features.key)}**.`
+              : `Could not get audio features for ${getEmbeddedTrackLink(track.spotify)}.`
           )).join('\n'),
         });
       }
@@ -194,8 +198,9 @@ export const handleCommandWithSpotify = async (message, command, args) => {
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
           content: tracksWithAudioFeatures.map((track) => (
-            `${getEmbeddedTrackLink(track.spotify)} is written in **${getPitchClassNotation(track.features.key)}**.`
-            `${getEmbeddedTrackLink(track.spotify)} has a BPM of **${Math.round(track.features.tempo)}**, is written in **${getPitchClassNotation(track.features.key)}**, and lasts ${getTrackDuration(track.duration_ms)}.`
+            track.features
+              ? `${getEmbeddedTrackLink(track.spotify)} has a BPM of **${Math.round(track.features.tempo)}**, is written in **${getPitchClassNotation(track.features.key)}**, and lasts ${getTrackDuration(track.duration_ms)}.`
+              : `Could not get audio features for ${getEmbeddedTrackLink(track.spotify)}.`
           )).join('\n'),
         });
       }
