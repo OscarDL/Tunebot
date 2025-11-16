@@ -7,12 +7,22 @@ const spamUsername = process.env.SPAM_USERNAME;
 const firstMessageLine = spamUsername + ' says:';
 const firstMessageLineBreak = firstMessageLine + '\n';
 
+/**
+ * @param { import('discord.js').Message } message
+ * @param { boolean } [skipFirstLine=false]
+ * @returns { { content: string; files: Array<string>; stickers: Array<string> } }
+ */
 export const getReplyContent = (message, skipFirstLine = false) => ({
   content: `${skipFirstLine ? '' : firstMessageLineBreak}${message.content}`,
   files: message.attachments.map((attachment) => attachment.url),
   stickers: message.stickers.map((sticker) => sticker.id),
 });
 
+/**
+ * @param { import('discord.js').Message } message
+ * @param { import('discord.js').Message | undefined } messageReference
+ * @returns { Promise<boolean> }
+ */
 const wasMessageSentBySpamUser = async (message, messageReference) => {
   const includeMessageAndBefore = messageReference ? {before: messageReference.id} : {};
 
@@ -28,6 +38,10 @@ const wasMessageSentBySpamUser = async (message, messageReference) => {
   return isSpamUserContinuity;
 };
 
+/**
+ * @param { import('discord.js').Message } message
+ * @returns { Promise<void> }
+ */
 export const sendSpamUserMessage = async (message) => {
   if (message.author.username !== spamUsername) return;
 
@@ -54,6 +68,10 @@ export const sendSpamUserMessage = async (message) => {
   }
 }
 
+/**
+ * @param { import('discord.js').Message } message
+ * @returns { Promise<void> }
+ */
 export const checkShouldPingSpamUser = async (message) => {
   // if the message is pinging the bot, send a ping to spamUser and immediately delete it afterwards
   if (message.mentions?.repliedUser?.id !== process.env.BOT_DISCORD_ID) return;

@@ -1,6 +1,9 @@
 let _cachedToken = null;
 let _cachedTokenExpiresAt = 0;
 
+/**
+ * @returns { Promise<{ accessToken: string; expiresIn: number }> }
+ */
 export const getSpotifyAccessToken = async () => {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;

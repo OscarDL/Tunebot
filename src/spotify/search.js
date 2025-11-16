@@ -1,6 +1,16 @@
 import { getSpotifyAccessToken } from './auth.js';
 import { cleanWordsFromTrackName } from './utils.js';
 
+/**
+ * @param { Record<string, any> } track
+ * @returns { {
+ *   trackId: string;
+ *   title: string;
+ *   artists: Array<string>;
+ *   album: string;
+ *   cover: string | null;
+ * } }
+ */
 const spotifyResponseToTrack = (track) => ({
   ...track,
   trackId: track.id,
@@ -18,7 +28,7 @@ const trackParams = {
 
 /**
  * @param { string | null } q - search query
- * @returns { Promise<Object | null> }
+ * @returns { Promise<ReturnType<typeof spotifyResponseToTrack> | null> }
  */
 export const searchSpotifyTrack = async (q) => {
   if (!q) {
@@ -81,7 +91,7 @@ export const searchSpotifyTrack = async (q) => {
 
 /**
  * @param { string } trackId - Spotify track ID
- * @returns { Promise<Object> }
+ * @returns { Promise<ReturnType<typeof spotifyResponseToTrack>> }
  */
 export const getSpotifyTrack = async (trackId) => {
   try {
@@ -95,6 +105,35 @@ export const getSpotifyTrack = async (trackId) => {
     if (!resp.ok) throw new Error('Failed to get track from Spotify.');
     const song = await resp.json();
     return spotifyResponseToTrack(song);
+  } catch (error) {
+    throw new Error(error.message || 'An unknown error occurred.');
+  }
+};
+
+/**
+ * @param { Array<string> } trackIds - Array of track IDs
+ * @returns { Promise<Array<{
+ *   id: string;
+ *   href: string;
+ *   acousticness: number;
+ *   danceability: number;
+ *   energy: number;
+ *   key: number;
+ *   liveness: number;
+ *   loudness: number;
+ *   mode: number;
+ *   speechiness: number;
+ *   tempo: number;
+ *   valence: number;
+ * }>> }
+ */
+export const getSpotifyTrackAudioFeatures = async (trackIds) => {
+  try {
+    const resp = await fetch(`https://api.reccobeats.com/v1/audio-features?ids=${trackIds.join(',')}`);
+
+    if (!resp.ok) throw new Error('Failed to get audio features from Spotify.');
+    const data = await resp.json();
+    return data.content;
   } catch (error) {
     throw new Error(error.message || 'An unknown error occurred.');
   }

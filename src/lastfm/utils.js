@@ -37,6 +37,10 @@ export const WHITELISTED_ARTISTS = [
   'xavi',
 ];
 
+/**
+ * @param { string } discordId
+ * @returns { boolean }
+ */
 export const isUserSavedAsLastfmUser = (discordId) => {
   return users.some((user) => user.discordId === discordId);
 };

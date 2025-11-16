@@ -1,3 +1,7 @@
+/**
+ * @param { import('discord.js').Message } message
+ * @returns { Promise<import('discord.js').Message | void> }
+ */
 export const fixEmbeddedLink = async (message) => {
   let reply = '';
 

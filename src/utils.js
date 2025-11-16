@@ -8,6 +8,11 @@ const MAX_USER_REQUESTS = 3;
 const MAX_SONG_REQUESTS = 10;
 const MAX_COVER_REQUESTS = 1;
 
+/**
+ * @param { details: { title: string; artists: Array<string>; trackId: string } }
+ * @param { string | undefined } userId
+ * @returns { string }
+ */
 export const getEmbeddedTrackLink = (details, userId) => {
   const {title, artists, trackId} = details;
   const prefix = userId ? `**<@${userId}>**: ` : '';
@@ -15,6 +20,13 @@ export const getEmbeddedTrackLink = (details, userId) => {
   return prefix + `[${trackText}](${`https://open.spotify.com/track/${trackId}`})`;
 };
 
+/**
+ * @param { import('discord.js').Message } message
+ * @param { string } command
+ * @param { number } nbRequests
+ * @param { boolean } isRequestingSongs
+ * @returns { Promise<void | import('discord.js').Message> }
+ */
 export const checkMaxRequests = async (message, command, nbRequests, isRequestingSongs) => {
   switch (command) {
     case 'cover': {

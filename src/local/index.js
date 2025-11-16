@@ -1,5 +1,10 @@
 // import fetch from 'node-fetch';
 
+/**
+ * @param { string } prefix
+ * @param { string } details
+ * @returns { Promise<string> }
+ */
 export const getLocalFileTrackInfo = async (prefix, details) => {
   try {
     let videoText = '';

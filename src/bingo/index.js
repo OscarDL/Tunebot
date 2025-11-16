@@ -43,6 +43,10 @@ const shuffleArray = (array, seed) => {
   return array;
 };
 
+/**
+ * @param { import('discord.js').Message } message
+ * @returns { Promise<void> }
+ */
 export const getRandomBingoCard = async (message) => {
   const channel = await message.guild.channels.fetch(process.env.BINGO_CHANNEL_ID);
   const bingo = await channel.messages.fetch(process.env.BINGO_MESSAGE_ID);
@@ -78,7 +82,7 @@ export const getRandomBingoCard = async (message) => {
   ctx.textBaseline = 'middle';
 
   // Text wrapping function
-  function wrapText(context, text, x, y, maxWidth, lineHeight) {
+  const wrapText = (context, text, x, y, maxWidth, lineHeight) => {
     const words = text.replaceAll('/', ' / ').trim().split(' ');
     let line = '';
     let testLine = '';

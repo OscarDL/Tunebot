@@ -1,3 +1,8 @@
+/**
+ * @param { import('discord.js').Message } message
+ * @param { string } input
+ * @returns { Promise<import('discord.js').Message> }
+ */
 export const getConvertedTemperature = async (message, input) => {
   const temp = Number(input.replace(/[^0-9.]/g, '')) || 0;
   const unit = input.slice(-1).toUpperCase();

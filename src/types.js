@@ -9,9 +9,9 @@ export const COMMANDS = [
   'cover',
   'duration',
   'pop',
-  // 'bpm',  // disabled until tunebat works again
-  // 'key',  // disabled until tunebat works again
-  // 'info', // disabled until tunebat works again
+  'bpm',
+  'key',
+  'info',
   /* --- vibin dips count command --- */
   'vibindips',
   /* --- temperature conversion --- */

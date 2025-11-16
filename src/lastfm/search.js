@@ -3,9 +3,9 @@ import users from './users.json' with { type: 'json' };
 import { LASTFM_API_URL } from './utils.js';
 
 /**
- * @param { Object } message - Discord message object
- * @param { string } userId - user ID
- * @returns { Promise<Object | null> }
+ * @param { import('discord.js').Message } message
+ * @param { string } userId
+ * @returns { Promise<string> }
  */
 export const searchLastfmTrack = async (userId) => {
   try {

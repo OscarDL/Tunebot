@@ -5,6 +5,10 @@ import { unscrobble } from './unscrobble.js';
 import users from './users.json' with { type: 'json' };
 import { LASTFM_API_URL, MISMATCH_TRACK_SUFFIXES, WHITELISTED_ARTISTS, BLACKLISTED_TITLES } from './utils.js';
 
+/**
+ * @param { import('discord.js').Message } message
+ * @returns { Promise<string> }
+ */
 export const setLastfmUsername = async (message) => {
   const userId = message.author.id;
 
@@ -43,6 +47,10 @@ export const setLastfmUsername = async (message) => {
   return await message.channel.send(reply);
 };
 
+/**
+ * @param { import('discord.js').Message } message
+ * @returns { Promise<void> }
+ */
 export const checkForLastfmSessionIdToken = async (message) => {
   const userId = message.author.id;
   const tokenRegex = /\./i;
@@ -59,6 +67,11 @@ export const checkForLastfmSessionIdToken = async (message) => {
   }
 };
 
+/**
+ * @param { import('discord.js').Message } message
+ * @param { Array<string> } args
+ * @returns { Promise<void> }
+ */
 export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
   // get user from users storage file
   const user = users.find((user) => user.discordId === message.author.id);
@@ -135,7 +148,6 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
             if (searchData.error) {
               console.error(`Error searching for track: ${searchData.message}\n`);
               resolve(); // Resolve anyway to continue with next track
-              return;
             }
 
             const searchResults = searchData.results.trackmatches.track;
@@ -161,7 +173,6 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
             if (relevantResults.length === 0) {
               console.log(`No results found for ${track.artist['#text']} - ${track.name}\n`);
               resolve();
-              return;
             }
 
             const sameTrack = relevantResults.find((result) => (
@@ -181,7 +192,6 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
             ) {
               console.log(`Track already matches: ${sameTrack.artist} - ${sameTrack.name}\n`);
               resolve();
-              return;
             }
 
             const options = {
