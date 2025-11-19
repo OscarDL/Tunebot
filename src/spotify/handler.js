@@ -153,11 +153,11 @@ export const handleCommandWithSpotify = async (message, command, args) => {
           });
         }
 
-        await addMissingSpotifyTracksFromPresences(filteredTracks);
+        const spotifyTracks = await addMissingSpotifyTracksFromPresences(tracks);
 
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
-          content: filteredTracks.map((track) => track.spotify).map((track) => (
+          content: spotifyTracks.map((track) => track.spotify).map((track) => (
             `${getEmbeddedTrackLink(track)} ${command === 'duration'
               ? `lasts ${getTrackDuration(track.duration_ms)}`
               : `has a popularity score of **${track.popularity}%** on Spotify.`
