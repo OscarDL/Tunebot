@@ -1,3 +1,4 @@
+import { MessageType } from 'discord.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -43,8 +44,10 @@ const wasMessageSentBySpamUser = async (message, messageReference) => {
  * @returns { Promise<void> }
  */
 export const sendSpamUserMessage = async (message) => {
-  console.dir(message, {depth: null});
   if (message.author.id !== spamUserId) return;
+
+  // only process default and reply message types
+  if (![MessageType.Default, MessageType.Reply].includes(message.type)) return;
 
   try {
     let doNothing = false;
