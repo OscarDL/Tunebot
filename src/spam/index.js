@@ -33,7 +33,7 @@ const wasMessageSentBySpamUser = async (message, messageReference) => {
   const followUpMessages = lastUserBotMessage > -1 ? lastMessages.slice(0, lastUserBotMessage) : [];
 
   const isSpamUserContinuity = followUpMessages.length > 0 && followUpMessages.every((m) => (
-    m.author.id === process.env.BOT_DISCORD_ID || m.author.username === spamUsername // is from bot or spamUsername
+    m.author.id === process.env.BOT_DISCORD_ID || m.author.id === spamUserId // is from bot or spam user
   ));
   return isSpamUserContinuity;
 };
@@ -43,26 +43,37 @@ const wasMessageSentBySpamUser = async (message, messageReference) => {
  * @returns { Promise<void> }
  */
 export const sendSpamUserMessage = async (message) => {
-  if (message.author.username !== spamUsername) return;
+  console.dir(message, {depth: null});
+  if (message.author.id !== spamUserId) return;
 
   try {
-    // find if the last message sent was also by spamUsername
+    let doNothing = false;
+    // find if the last message sent was also by spam user
     const isSpamUserContinuity = await wasMessageSentBySpamUser(message);
 
-    // send last message of spamUsername flagged as spam
+    // send last message of spam user flagged as spam
     if (message.reference) {
       await message.channel.messages.fetch(message.reference.messageId).then((msgToReply) => msgToReply.reply(getReplyContent(message)));
     } else {
       if (message.content.length > (2000 - firstMessageLineBreak.length)) {
         await message.channel.send(firstMessageLine);
         await message.channel.send(message.content);
-      } else {
+      }
+      else if (message.content) {
         await message.channel.send(getReplyContent(message, isSpamUserContinuity));
+      }
+      else if (message.poll) {
+        await message.channel.send({poll: message.poll});
+      }
+      else {
+        doNothing = true;
       }
     }
 
-    // delete previous message from spamUsername
-    await message.delete();
+    // delete previous message from spam user
+    if (!doNothing) {
+      await message.delete();
+    }
   } catch (e) {
     console.error(e);
   }
