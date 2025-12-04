@@ -128,6 +128,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
         });
       }
 
+      case 'c':
       case 'cover': {
         if (filteredTracks.some((track) => typeof track === 'string')) {
           return await message.reply({
@@ -156,10 +157,10 @@ export const handleCommandWithSpotify = async (message, command, args) => {
 
         return await message.reply({
           flags: [MessageFlags.SuppressNotifications],
-          content: spotifyTracks.map((track) => track.spotify).map((track) => (
-            `${getEmbeddedTrackLink(track)} ${command === 'duration'
-              ? `lasts ${getTrackDuration(track.duration_ms)}`
-              : `has a popularity score of **${track.popularity}%** on Spotify.`
+          content: spotifyTracks.map((track) => (
+            `${getTrackMessage(track)} ${command === 'duration'
+              ? `lasts ${getTrackDuration(track.spotify.duration_ms)}.`
+              : `has a popularity score of **${track.spotify.popularity}%** on Spotify.`
             }`
           )).join('\n'),
         });
@@ -172,7 +173,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
           flags: [MessageFlags.SuppressNotifications],
           content: tracksWithAudioFeatures.map((track) => (
             track.features
-              ? `${getEmbeddedTrackLink(track.spotify)} has a BPM of **${Math.round(track.features.tempo)}**.`
+              ? `${getTrackMessage(track)} has a BPM of **${Math.round(track.features.tempo)}**.`
               : `Could not get audio features for ${getEmbeddedTrackLink(track.spotify)}.`
           )).join('\n'),
         });
@@ -185,7 +186,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
           flags: [MessageFlags.SuppressNotifications],
           content: tracksWithAudioFeatures.map((track) => (
             track.features
-              ? `${getEmbeddedTrackLink(track.spotify)} is written in **${getPitchClassNotation(track.features.key)}**.`
+              ? `${getTrackMessage(track)} is written in **${getPitchClassNotation(track.features.key)}**.`
               : `Could not get audio features for ${getEmbeddedTrackLink(track.spotify)}.`
           )).join('\n'),
         });
@@ -198,7 +199,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
           flags: [MessageFlags.SuppressNotifications],
           content: tracksWithAudioFeatures.map((track) => (
             track.features
-              ? `${getEmbeddedTrackLink(track.spotify)} has a BPM of **${Math.round(track.features.tempo)}**, is written in **${getPitchClassNotation(track.features.key)}**, and lasts ${getTrackDuration(track.duration_ms)}.`
+              ? `${getTrackMessage(track)} has a BPM of **${Math.round(track.features.tempo)}**, is written in **${getPitchClassNotation(track.features.key)}**, and lasts ${getTrackDuration(track.spotify.duration_ms)}.`
               : `Could not get audio features for ${getEmbeddedTrackLink(track.spotify)}.`
           )).join('\n'),
         });

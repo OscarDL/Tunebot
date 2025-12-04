@@ -6,6 +6,7 @@ export const COMMANDS = [
   'fxfm',
   'np',
   'fxnp',
+  'c',
   'cover',
   'duration',
   'pop',

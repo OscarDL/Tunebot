@@ -36,7 +36,7 @@ export const cleanWordsFromTrackName = (trackName) => {
  * @returns { string }
  */
 export const getTrackDuration = (durationMs) => (
-  `${Math.floor(durationMs / 60000)}:${String(Math.floor((durationMs % 60000) / 1000)).padStart(2, '0')} minutes.`
+  `${Math.floor(durationMs / 60000)}:${String(Math.floor((durationMs % 60000) / 1000)).padStart(2, '0')} minutes`
 );
 
 /**
