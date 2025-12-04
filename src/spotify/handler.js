@@ -57,7 +57,6 @@ export const handleCommandWithSpotify = async (message, command, args) => {
       const {user, presence} = message.member;
 
       if (shouldFallbackToLastfm(user.id, presence)) {
-        console.log(await searchLastfmTrack(user.id));
         tracks.push({
           spotify: await searchSpotifyTrack(
             await searchLastfmTrack(user.id),

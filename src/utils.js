@@ -1,4 +1,5 @@
 export const repeatTypingDuringCommand = async (message, callback) => {
+  await message.channel.sendTyping();
   const typingInterval = setInterval(async () => await message.channel.sendTyping(), 9000);
   await callback();
   return clearInterval(typingInterval);

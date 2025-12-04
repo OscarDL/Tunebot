@@ -123,16 +123,16 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
     }
 
     for (const track of tracks) {
-      console.log(`Checking track: ${track.artist['#text']} - ${track.name}`);
+      console.log(`\nChecking track: ${track.artist['#text']} - ${track.name}`);
 
       const featureRegex = new RegExp(`\\b(${BLACKLISTED_TITLES.join('|')})\\b`, 'i');
       if (featureRegex.test(track.name)) {
-        console.log(`Skipping blacklisted track: ${track.name}\n`);
+        console.log(`Skipping blacklisted track: ${track.name}`);
         continue;
       }
 
       if (!WHITELISTED_ARTISTS.some((name) => track.artist['#text'].toLowerCase() === name)) {
-        console.log(`Skipping non-whitelisted artist: ${track.artist['#text']}\n`);
+        console.log(`Skipping non-whitelisted artist: ${track.artist['#text']}`);
         continue;
       }
 
@@ -146,8 +146,8 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
             const searchData = await response.json();
 
             if (searchData.error) {
-              console.error(`Error searching for track: ${searchData.message}\n`);
-              resolve(); // Resolve anyway to continue with next track
+              console.error(`Error searching for track: ${searchData.message}`);
+              return resolve(); // Resolve anyway to continue with next track
             }
 
             const searchResults = searchData.results.trackmatches.track;
@@ -171,8 +171,8 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
             });
 
             if (relevantResults.length === 0) {
-              console.log(`No results found for ${track.artist['#text']} - ${track.name}\n`);
-              resolve();
+              console.log(`No results found for ${track.artist['#text']} - ${track.name}`);
+              return resolve();
             }
 
             const sameTrack = relevantResults.find((result) => (
@@ -190,8 +190,8 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
               // if the ratio is lower than 0.5, we can rule out the second match
               (Number(secondMatch.listeners) / Number(sameTrack.listeners) < 0.5)
             ) {
-              console.log(`Track already matches: ${sameTrack.artist} - ${sameTrack.name}\n`);
-              resolve();
+              console.log(`Track already matches: ${sameTrack.artist} - ${sameTrack.name}`);
+              return resolve();
             }
 
             const options = {
@@ -225,12 +225,12 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
             } else {
               console.log(`Successfully scrobbled ${secondMatch.artist} - ${secondMatch.name}`);
               await unscrobble(user, track);
-              console.log(`Successfully unscrobbled ${track.artist['#text']} - ${track.name}\n`);
+              console.log(`Successfully unscrobbled ${track.artist['#text']} - ${track.name}`);
             }
 
             resolve();
           } catch (error) {
-            console.error('Error processing track:', error, '\n');
+            console.error('Error processing track:', error);
             resolve(); // Resolve anyway to continue with next track
           }
         }, 5000);

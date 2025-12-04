@@ -66,8 +66,6 @@ client.on('messageCreate', async (message) => {
   const content = message.content.slice(1).toLowerCase().split(' ');
   const [command, ...args] = content;
 
-  await message.channel.sendTyping();
-
   // vibin dips command
   if (command === 'vibindips') return await getDips(message);
 
