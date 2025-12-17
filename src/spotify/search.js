@@ -21,7 +21,8 @@ const spotifyResponseToTrack = (track) => ({
 });
 
 const trackParams = {
-  limit: 1,
+  limit: 5, // increase chances of finding the correct track
+  locale: 'en-US',
   market: 'US',
   type: 'track',
 };
@@ -47,12 +48,10 @@ export const searchSpotifyTrack = async (q) => {
       const [tOrA, aOrT] = query.split(' | ').map((s) => s.trim().toLowerCase());
       const params1 = new URLSearchParams({
         ...trackParams,
-        limit: 5, // increase limit to improve chances of finding the correct track
         q: `track:"${aOrT}" artist:"${tOrA}"`,
       });
       const params2 = new URLSearchParams({
         ...trackParams,
-        limit: 5, // increase limit to improve chances of finding the correct track
         q: `track:"${tOrA}" artist:"${aOrT}"`,
       });
 
