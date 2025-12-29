@@ -72,9 +72,9 @@ export const fetchWithCookies = (jar = new CookieJar()) => async (url, options =
   const response = await fetch(url, options);
 
   // Handle Set-Cookie headers
-  const setCookieHeaders = response.headers.getAll ? 
-    response.headers.getAll('set-cookie') : 
-    (response.headers.get('set-cookie') || '').split(/,(?=[^;]+=[^;]+)/);
+  const setCookieHeaders = response.headers.getAll
+    ? response.headers.getAll('set-cookie') 
+    : (response.headers.get('set-cookie') || '').split(/,(?=[^;]+=[^;]+)/);
 
   if (setCookieHeaders) {
     setCookieHeaders.forEach(cookie => jar.setCookie(cookie, url));

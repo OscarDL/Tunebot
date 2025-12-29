@@ -194,13 +194,16 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
               return resolve();
             }
 
+            const scrobbleTimestamp = forceScrobble
+              ? String(Math.floor(Date.now() / 1000))
+              : track.date.uts;
             const options = {
               method: 'track.scrobble',
               api_key: process.env.LASTFM_API_KEY,
               sk: user.lastfm.sessionKey,
               artist: secondMatch.artist,
               track: secondMatch.name,
-              timestamp: forceScrobble ? Date.now() : track.date.uts,
+              timestamp: scrobbleTimestamp,
               album: track.album['#text'],
             };
 
@@ -224,7 +227,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
               console.error(`Error scrobbling track: ${scrobbled.message}`);
             } else {
               console.log(`Successfully scrobbled ${secondMatch.artist} - ${secondMatch.name}`);
-              await unscrobble(user, track);
+              // await unscrobble(user, track);
               console.log(`Successfully unscrobbled ${track.artist['#text']} - ${track.name}`);
             }
 
