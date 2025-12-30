@@ -227,7 +227,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
               console.error(`Error scrobbling track: ${scrobbled.message}`);
             } else {
               console.log(`Successfully scrobbled ${secondMatch.artist} - ${secondMatch.name}`);
-              // await unscrobble(user, track);
+              await unscrobble(user, track);
               console.log(`Successfully unscrobbled ${track.artist['#text']} - ${track.name}`);
             }
 
