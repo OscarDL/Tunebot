@@ -23,4 +23,6 @@ export const COMMANDS = [
   'setlastfm',
   /* --- fix ophelia scrobbles --- */
   'opheliafix',
+  /* --- fix tkc tidal scrobbles --- */
+  'tkcfix',
 ];

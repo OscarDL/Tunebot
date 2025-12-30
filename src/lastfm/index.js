@@ -214,14 +214,14 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
             Object.entries(options).forEach(([key, value]) => formData.append(key, value));
             formData.append('api_sig', md5);
 
-            const sbResponse = await fetch(scrobbleUrl, {
+            const scrobbleResponse = await fetch(scrobbleUrl, {
               method: 'POST',
               headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
+                'Content-Type': 'application/x-www-form-urlencoded',
               },
               body: formData,
             });
-            const scrobbled = await sbResponse.json();
+            const scrobbled = await scrobbleResponse.json();
 
             if (scrobbled.error) {
               console.error(`Error scrobbling track: ${scrobbled.message}`);

@@ -1,6 +1,11 @@
 import request from 'request';
 import limit from 'simple-rate-limiter';
 
+/**
+ * @param { import('./users.json')[number] } user
+ * @param { * } track
+ * @returns { Promise<boolean> }
+ */
 export const unscrobble = async (user, track) => {
   let limitedRequest = limit(request).to(1).per(1000);
 
@@ -10,13 +15,20 @@ export const unscrobble = async (user, track) => {
 
   try {
     await unscrobbleTrack(track, user, jar, limitedRequest);
-    return 1;
+    return true;
   } catch (error) {
     console.log(error);
-    return 0;
+    return false;
   }
 };
 
+/**
+ * @param { * } track
+ * @param { import('./users.json')[number] } user
+ * @param { import('request').CookieJar } jar
+ * @param { * } limitedRequest 
+ * @returns { Promise<void> }
+ */
 const unscrobbleTrack = async (track, user, jar, limitedRequest) => {
   let options = {
     method: 'POST',

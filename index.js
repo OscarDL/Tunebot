@@ -4,6 +4,7 @@ import { ChannelType, Client, IntentsBitField, Partials } from 'discord.js';
 import { getRandomBingoCard } from './src/bingo/index.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
+import { handleTkcScrobbleFix } from './src/lastfm/tkc.js';
 import { fixEmbeddedLink } from './src/linkfix/index.js';
 import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
 import { handleCommandWithSpotify } from './src/spotify/handler.js';
@@ -15,8 +16,8 @@ import users from './src/lastfm/users.json' with { type: 'json' };
 dotenv.config();
 
 const PREFIXES = [
-  ',',
-  '>',
+  '$',
+  '$',
 ];
 
 const client = new Client({
@@ -85,6 +86,15 @@ client.on('messageCreate', async (message) => {
 
     return await repeatTypingDuringCommand(message, async () => {
       await fixOpheliaScrobblesForTimePeriod(message, args);
+    });
+  }
+
+  if (command === 'tkcfix') {
+    const user = users.find(u => u.discordId === message.author.id);
+    if (user.lastfm.username !== 'thekandycinema') return;
+
+    return await repeatTypingDuringCommand(message, async () => {
+      await handleTkcScrobbleFix(user);
     });
   }
 
