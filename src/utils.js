@@ -1,3 +1,8 @@
+/**
+ * @param { import('discord.js').Message } message
+ * @param { Function } callback
+ * @returns { Promise<void> }
+ */
 export const repeatTypingDuringCommand = async (message, callback) => {
   await message.channel.sendTyping();
   const typingInterval = setInterval(async () => await message.channel.sendTyping(), 9000);
@@ -10,7 +15,7 @@ const MAX_SONG_REQUESTS = 10;
 const MAX_COVER_REQUESTS = 1;
 
 /**
- * @param { details: { title: string; artists: Array<string>; trackId: string } }
+ * @param { { title: string; artists: Array<string>; trackId: string } } details
  * @param { string | undefined } userId
  * @returns { string }
  */

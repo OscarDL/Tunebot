@@ -15,6 +15,7 @@ export const unscrobble = async (user, track) => {
 
   try {
     await unscrobbleTrack(track, user, jar, limitedRequest);
+    console.log(`Successfully unscrobbled ${track.artist['#text']} - ${track.name}`);
     return true;
   } catch (error) {
     console.log(error);

@@ -1,4 +1,4 @@
-import { generateMd5HashSig } from './auth.js';
+import { scrobble } from './scrobble.js';
 import { unscrobble } from './unscrobble.js';
 import { LASTFM_API_URL } from './utils.js';
 
@@ -10,20 +10,18 @@ const LIMIT = 200;
 export const handleTkcScrobbleFix = async (user) => {
   let start = 0;
   let total = 0;
-  let startFromDay = new Date(1758844799000); // september 26 2025
+  let scrobbleTimestamp = 1767139200; // December 31 2025, 12:00 AM GMT
+  let startFromLastfmTimestamp = 1596852000; // August 8 2020, 2:00 AM GMT
 
   const recentsUrl = `${LASTFM_API_URL}?method=user.getrecenttracks&user=${user.lastfm.username}&api_key=${process.env.LASTFM_API_KEY}&format=json&limit=${LIMIT}`;
-  const totalResponse = await fetch(recentsUrl + `&to=${startFromDay.getTime() / 1000}`);
+  const totalResponse = await fetch(recentsUrl + `&to=${startFromLastfmTimestamp}`);
   const totalData = await totalResponse.json();
   total = parseInt(totalData.recenttracks['@attr'].total);
 
   while (start < total) {
-    const from = Math.floor(startFromDay.getTime() / 1000);
-    const to = from - 86400; // 1 day in seconds
-    startFromDay = new Date(to * 1000);
-
     try {
-      const dayUrl = `${recentsUrl}&from=${to}&to=${from}`;
+      const to = startFromLastfmTimestamp + 86400; // 1 day in seconds
+      const dayUrl = `${recentsUrl}&from=${startFromLastfmTimestamp}&to=${to}`;
       const dayResponse = await fetch(dayUrl);
       const dayData = await dayResponse.json();
 
@@ -38,26 +36,35 @@ export const handleTkcScrobbleFix = async (user) => {
 
         for (const track of dayData.recenttracks.track) {
           const [artist, ...otherArtists] = track.artist['#text'].split(', ');
-          if (otherArtists.length === 0) continue;
+          if (otherArtists.length === 0) {
+            // await scrobble(
+            //   user.lastfm.sessionKey,
+            //   '1767225599',
+            //   artist,
+            //   track.name,
+            //   track.album['#text'],
+            // );
+            // scrobbleTimestamp += 1;
+            // await unscrobble(user, track);
+            continue;
+          };
 
           // Wait for the timeout and the API call to complete before continuing
           await new Promise((resolve) => {
             setTimeout(async () => {
-              let foundTrack = track;
-              let mainArtist = artist;
-
               try {
+                const mainArtist = artist;
                 const searchedTracks = await Promise.all([
-                  getLastfmApiDataAndIgnoreError8(
+                  getLastfmApiDataAndRetryError8(
                     `${searchTrackUrl}&artist=${encodeURIComponent(mainArtist)}&track=${encodeURIComponent(track.name)}`
                   ),
-                  ...otherArtists.map((otherArtist) => getLastfmApiDataAndIgnoreError8(
+                  ...otherArtists.map((otherArtist) => getLastfmApiDataAndRetryError8(
                     `${searchTrackUrl}&artist=${encodeURIComponent(otherArtist)}&track=${encodeURIComponent(track.name)}`
                   )),
                 ]);
-
                 const tracks = searchedTracks.flatMap((st) => st.results.trackmatches.track);
-                foundTrack = tracks.find((t) => t.artist.toLowerCase() === mainArtist.toLowerCase() && t.name.toLowerCase() === track.name.toLowerCase())
+
+                const foundTrack = tracks.find((t) => t.artist.toLowerCase() === mainArtist.toLowerCase() && t.name.toLowerCase() === track.name.toLowerCase())
                   ?? tracks.find((t) => {
                     const originalName = track.name.toLowerCase();
                     const searchedName = t.name.toLowerCase();
@@ -65,44 +72,18 @@ export const handleTkcScrobbleFix = async (user) => {
                     return t.artist.toLowerCase() === mainArtist.toLowerCase() && (searchedName === dashVariant || searchedName === dashVariant.replace(' -', ' - '));
                   })
                   ?? tracks.sort((a, b) => parseInt(b.listeners) - parseInt(a.listeners))[0] // pick most popular if no exact match
-                  ?? foundTrack; // if no results from search, keep original
+                  ?? track; // if no results from search, keep original
 
-                const scrobbleOptions = {
-                  method: 'track.scrobble',
-                  api_key: process.env.LASTFM_API_KEY,
-                  sk: user.lastfm.sessionKey,
-                  artist: foundTrack.artist,
-                  track: foundTrack.name,
-                  // December 31 2025, 23:59:59 GMT
-                  timestamp: '1767225599',
-                  album: track.album['#text'],
-                };
-                const md5 = generateMd5HashSig(scrobbleOptions);
-                const scrobbleUrl = `${LASTFM_API_URL}?format=json`;
-
-                const formData = new URLSearchParams();
-                Object.entries(scrobbleOptions).forEach(([key, value]) => formData.append(key, value));
-                formData.append('api_sig', md5);
-
-                console.log(`\nProcessing track: ${track.artist['#text']} | ${track.name}`);
-                console.log(`Would scrobble: ${foundTrack.artist} | ${foundTrack.name} | ${track.album['#text']}`);
-
-                // const scrobbleResponse = await fetch(scrobbleUrl, {
-                //   method: 'POST',
-                //   headers: {
-                //     'Content-Type': 'application/x-www-form-urlencoded',
-                //   },
-                //   body: formData,
-                // });
-                // const scrobbled = await scrobbleResponse.json();
-
-                // if (scrobbled.error) {
-                //   console.error(`Error scrobbling track: ${scrobbled.message}`);
-                // } else {
-                //   console.log(`Successfully scrobbled ${foundTrack.artist} - ${foundTrack.name}`);
-                //   await unscrobble(user, track);
-                //   console.log(`Successfully unscrobbled ${foundTrack.artist} - ${foundTrack.name}`);
-                // }
+                // December 31 2025, 23:59:59 GMT
+                await scrobble(
+                  user.lastfm.sessionKey,
+                  scrobbleTimestamp,
+                  foundTrack.artist,
+                  foundTrack.name,
+                  track.album['#text'],
+                );
+                scrobbleTimestamp += 1;
+                await unscrobble(user, track);
 
                 resolve();
               } catch (error) {
@@ -113,17 +94,19 @@ export const handleTkcScrobbleFix = async (user) => {
           });
         }
       }
+
+      startFromLastfmTimestamp = to;
+      start += dayTotal;
     } catch (error) {
+      console.error(`TKC ERROR FOR RECENTS FROM ${new Date(startFromLastfmTimestamp * 1000)} TO ${new Date((startFromLastfmTimestamp + 86400) * 1000)}:`);
       console.error('Error fetching recent tracks from Last.fm:', error);
       return;
-    } finally {
-      start += LIMIT;
     }
   }
 };
 
 
-const getLastfmApiDataAndIgnoreError8 = async (url) => {
+const getLastfmApiDataAndRetryError8 = async (url) => {
   try {
     const response = await fetch(url);
     const data = await response.json();

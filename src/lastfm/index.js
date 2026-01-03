@@ -1,6 +1,7 @@
 import fs from 'fs';
 
-import { generateMd5HashSig, initiateLogin } from './auth.js';
+import { initiateLogin } from './auth.js';
+import { scrobble } from './scrobble.js';
 import { unscrobble } from './unscrobble.js';
 import users from './users.json' with { type: 'json' };
 import { LASTFM_API_URL, MISMATCH_TRACK_SUFFIXES, WHITELISTED_ARTISTS, BLACKLISTED_TITLES } from './utils.js';
@@ -196,40 +197,16 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
 
             const scrobbleTimestamp = forceScrobble
               ? String(Math.floor(Date.now() / 1000))
-              : track.date.uts;
-            const options = {
-              method: 'track.scrobble',
-              api_key: process.env.LASTFM_API_KEY,
-              sk: user.lastfm.sessionKey,
-              artist: secondMatch.artist,
-              track: secondMatch.name,
-              timestamp: scrobbleTimestamp,
-              album: track.album['#text'],
-            };
+              : String(track.date.uts);
 
-            const md5 = generateMd5HashSig(options);
-            const scrobbleUrl = `${LASTFM_API_URL}?format=json`;
-
-            const formData = new URLSearchParams();
-            Object.entries(options).forEach(([key, value]) => formData.append(key, value));
-            formData.append('api_sig', md5);
-
-            const scrobbleResponse = await fetch(scrobbleUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-              body: formData,
-            });
-            const scrobbled = await scrobbleResponse.json();
-
-            if (scrobbled.error) {
-              console.error(`Error scrobbling track: ${scrobbled.message}`);
-            } else {
-              console.log(`Successfully scrobbled ${secondMatch.artist} - ${secondMatch.name}`);
-              await unscrobble(user, track);
-              console.log(`Successfully unscrobbled ${track.artist['#text']} - ${track.name}`);
-            }
+            await scrobble(
+              user.lastfm.sessionKey,
+              scrobbleTimestamp,
+              secondMatch.artist,
+              secondMatch.name,
+              track.album['#text'],
+            );
+            await unscrobble(user, track);
 
             resolve();
           } catch (error) {

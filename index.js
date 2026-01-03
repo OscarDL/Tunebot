@@ -4,6 +4,7 @@ import { ChannelType, Client, IntentsBitField, Partials } from 'discord.js';
 import { getRandomBingoCard } from './src/bingo/index.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
+import users from './src/lastfm/users.json' with { type: 'json' };
 import { handleTkcScrobbleFix } from './src/lastfm/tkc.js';
 import { fixEmbeddedLink } from './src/linkfix/index.js';
 import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
@@ -11,7 +12,6 @@ import { handleCommandWithSpotify } from './src/spotify/handler.js';
 import { COMMANDS } from './src/types.js';
 import { repeatTypingDuringCommand } from './src/utils.js';
 import { addDipCount, getDips } from './src/vibin/dips.js';
-import users from './src/lastfm/users.json' with { type: 'json' };
 
 dotenv.config();
 
