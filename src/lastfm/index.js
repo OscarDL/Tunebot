@@ -118,7 +118,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
     }
 
     console.log(data.recenttracks['@attr'].total + ' scrobbles');
-    const tracks = [data.recenttracks.track].flat(1).filter((track) => !!track.date);
+    const tracks = [data.recenttracks.track].flat().filter((track) => !!track.date);
     if (!tracks || tracks.length === 0) {
       return await message.reply('No scrobbles found for the specified date.');
     }
@@ -199,13 +199,12 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
               ? String(Math.floor(Date.now() / 1000))
               : String(track.date.uts);
 
-            await scrobble(
-              user.lastfm.sessionKey,
-              scrobbleTimestamp,
-              secondMatch.artist,
-              secondMatch.name,
-              track.album['#text'],
-            );
+            const scrobbleTrack = structuredClone(track);
+            scrobbleTrack.artist['#text'] = secondMatch.artist;
+            scrobbleTrack.name = secondMatch.name;
+            scrobbleTrack.date.uts = scrobbleTimestamp;
+
+            await scrobble(user.lastfm.sessionKey, [scrobbleTrack]);
             await unscrobble(user, track);
 
             resolve();
