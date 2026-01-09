@@ -47,10 +47,11 @@ const unscrobbleTrack = async (track, user, jar, limitedRequest) => {
       'csrfmiddlewaretoken': user.lastfm.web.csrftoken,
       'artist_name': track.artist['#text'],
       'track_name': track.name,
-      'timestamp': track.date.uts,
+      'timestamp': track.date?.uts ?? track.timestamp,
       'ajax': 1,
     },
   };
+  console.log(options.form);
 
   return new Promise((resolve, reject) => {
     try {
