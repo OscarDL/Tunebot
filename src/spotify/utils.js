@@ -3,32 +3,54 @@
  * @returns { string }
  */
 export const cleanWordsFromTrackName = (trackName) => {
-  let wordsToRemove = ['feat.', 'feat', 'ft.', 'ft', 'with', 'w/'];
-  wordsToRemove.map((word) => wordsToRemove.push(`(${word}`, `[${word}`));
+  // Words that need exact/full matches (case-insensitive)
+  const fullMatchWords = ['original mix', 'radio mix', 'radio edit'];
 
-  const words = trackName.toLowerCase().split(' ');
+  // Words/patterns that are partial matches (can appear within other text)
+  const partialMatchWords = ['feat.', 'feat', 'ft.', 'ft', 'with', 'w/'];
 
-  // find the index of the word to remove
-  const index = words.findIndex((word) => wordsToRemove.includes(word));
-  if (index === -1) return words.join(' ');
+  let result = trackName;
 
-  // remove the word at index, the character prior and everything up until the opposite corresponding character
+  // Remove full match words - these are exact matches in any bracket format
+  fullMatchWords.forEach((pattern) => {
+    // Match (pattern), [pattern], or - pattern at end
+    const regexes = [
+      new RegExp(`\\s*\\(\\s*${pattern}\\s*\\)`, 'i'),
+      new RegExp(`\\s*\\[\\s*${pattern}\\s*\\]`, 'i'),
+      new RegExp(`\\s*-\\s*${pattern}\\s*$`, 'i'),
+    ];
+    regexes.forEach((regex) => {
+      result = result.replace(regex, '');
+    });
+  });
+
+  // Remove partial match words
+  const words = result.toLowerCase().split(' ');
+  const index = words.findIndex((word) => partialMatchWords.some((w) => word.includes(w)));
+
+  if (index === -1) return result.trim();
+
   const word = words[index];
 
-  switch (word[0]) {
-    case '(':
-      // remove what's inside the parentheses
-      const closingP = words.findIndex((word) => word.endsWith(')'));
-      return [words.slice(0, index).join(' '), words.slice(closingP + 1).join(' ')].join(' ').trim();
-    case '[':
-      // remove what's inside the brackets
-      const closingB = words.findIndex((word) => word.endsWith(']'));
-      return [words.slice(0, index).join(' '), words.slice(closingB + 1).join(' ')].join(' ').trim();
-    default:
-      const closing = words.findIndex((word) => word === '-');
-      const suffix = words.slice(closing).join(' '); // If there's a dash for a remix, keep it
-      return [words.slice(0, index).join(' '), closing > -1 ? ` ${suffix}` : ''].join(' ').trim();
+  // Handle different bracket/separator types
+  if (word.includes('(')) {
+    const closingIndex = words.findIndex((w, i) => i >= index && w.includes(')'));
+    if (closingIndex !== -1) {
+      return [words.slice(0, index).join(' '), words.slice(closingIndex + 1).join(' ')].join(' ').trim();
+    }
+  } else if (word.includes('[')) {
+    const closingIndex = words.findIndex((w, i) => i >= index && w.includes(']'));
+    if (closingIndex !== -1) {
+      return [words.slice(0, index).join(' '), words.slice(closingIndex + 1).join(' ')].join(' ').trim();
+    }
+  } else {
+    const dashIndex = words.findIndex((w, i) => i >= index && w === '-');
+    if (dashIndex !== -1) {
+      return words.slice(0, index).join(' ').trim();
+    }
   }
+
+  return result.trim();
 };
 
 /**

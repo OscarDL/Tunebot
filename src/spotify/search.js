@@ -28,14 +28,10 @@ const trackParams = {
 };
 
 /**
- * @param { string | null } q
- * @returns { Promise<ReturnType<typeof spotifyResponseToTrack> | null> }
+ * @param { string } q
+ * @returns { Promise<Record<string, any>> }
  */
-export const searchSpotifyTrack = async (q) => {
-  if (!q) {
-    throw new Error('No song provided for Spotify track search.');
-  }
-
+export const searchSpotifyTracks = async (q) => {
   try {
     const { accessToken } = await getSpotifyAccessToken();
     const query = q.toLowerCase().trim();
@@ -60,8 +56,35 @@ export const searchSpotifyTrack = async (q) => {
         fetch(`https://api.spotify.com/v1/search?${params2.toString()}`, {headers}),
       ]);
       const [data1, data2] = await Promise.all([resp1.json(), resp2.json()]);
-      const tracks = [...data1.tracks.items, ...data2.tracks.items];
+      return [...data1.tracks.items, ...data2.tracks.items];
+    }
 
+    const params = new URLSearchParams({ q: query, ...trackParams });
+    const resp = await fetch(`https://api.spotify.com/v1/search?${params.toString()}`, {headers});
+
+    if (!resp.ok) throw new Error('Failed to search track on Spotify.');
+    const data = await resp.json();
+    return data.tracks.items;
+  } catch (error) {
+    throw new Error(error.message || 'An unknown error occurred.');
+  }
+}
+
+/**
+ * @param { string | null } q
+ * @returns { Promise<ReturnType<typeof spotifyResponseToTrack> | null> }
+ */
+export const searchSpotifyTrack = async (q) => {
+  if (!q) {
+    throw new Error('No song provided for Spotify track search.');
+  }
+
+  try {
+    const tracks = await searchSpotifyTracks(q);
+    const query = q.toLowerCase().trim();
+
+    if (query.includes(' | ')) {
+      const [tOrA, aOrT] = query.split(' | ').map((s) => s.trim().toLowerCase());
       const track = tracks.find((item) => {
         const title = cleanWordsFromTrackName(item.name.toLowerCase());
         const artists = item.artists.map((a) => a.name.toLowerCase());
@@ -77,12 +100,7 @@ export const searchSpotifyTrack = async (q) => {
       return spotifyResponseToTrack(track);
     }
 
-    const params = new URLSearchParams({ q: query, ...trackParams });
-    const resp = await fetch(`https://api.spotify.com/v1/search?${params.toString()}`, {headers});
-
-    if (!resp.ok) throw new Error('Failed to search track on Spotify.');
-    const data = await resp.json();
-    return spotifyResponseToTrack(data.tracks.items[0]) ?? null;
+    return spotifyResponseToTrack(tracks[0]) ?? null;
   } catch (error) {
     throw new Error(error.message || 'An unknown error occurred.');
   }
