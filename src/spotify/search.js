@@ -23,7 +23,7 @@ const spotifyResponseToTrack = (track) => ({
 const trackParams = {
   limit: 5, // increase chances of finding the correct track
   locale: 'en-US',
-  market: 'US',
+  market: 'NZ',
   type: 'track',
 };
 
