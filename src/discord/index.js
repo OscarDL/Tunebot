@@ -27,7 +27,7 @@ export const getSpotifyPresence = async (user, presence, isSelfAsk = false) => {
   const prefix = isSelfAsk ? '' : `**<@${user.id}>**: `;
 
   if (!currentTrack) {
-    const lastfmHint = `\n**${prefix ? 'They' : 'You'} can either keep being a bitch, or be a chad read the fucking following: fallback commands to last.fm by linking ${prefix ? 'their' : 'your'} account with the \`setlastfm\` command.**`;
+    const lastfmHint = `\n**PLEASE HOMIE 🙏🙏 Be a real one and ${prefix ? 'tell them to link their' : 'link your'} account with the \`setlastfm\` command ‼️🙏**`;
     return prefix + 'No track currently playing.' + (!isUserSavedAsLastfmUser(user.id) ? lastfmHint : '');
   }
 
