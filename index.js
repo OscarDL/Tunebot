@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 import { ChannelType, Client, IntentsBitField, Partials } from 'discord.js';
 
 import { getRandomBingoCard } from './src/bingo/index.js';
+import { getConvertedSize } from './src/convert/size.js';
 import { getConvertedTemperature } from './src/convert/temp.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
 import users from './src/lastfm/users.json' with { type: 'json' };
@@ -68,6 +69,9 @@ client.on('messageCreate', async (message) => {
 
   // vibin dips command
   if (command === 'vibindips') return await getDips(message);
+
+  // size conversion command
+  if (command === 'size') return await getConvertedSize(message, args[0]);
 
   // temperature conversion command
   if (command === 'temp') return await getConvertedTemperature(message, args[0]);

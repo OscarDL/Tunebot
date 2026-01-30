@@ -15,6 +15,8 @@ export const COMMANDS = [
   'info',
   /* --- vibin dips count command --- */
   'vibindips',
+  /* --- size conversion --- */
+  'size',
   /* --- temperature conversion --- */
   'temp',
   /* --- create bingo card command --- */
