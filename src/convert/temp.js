@@ -4,7 +4,7 @@
  * @returns { Promise<import('discord.js').Message> }
  */
 export const getConvertedTemperature = async (message, input) => {
-  const temp = Number(input.replace(/[^0-9.]/g, '')) || 0;
+  const temp = Number(input.replace(/[^0-9-.]/g, '')) || 0;
   const unit = input.slice(-1).toUpperCase();
   if (!temp) return 'Please provide a temperature.';
 
