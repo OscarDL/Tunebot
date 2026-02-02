@@ -21,7 +21,6 @@ const spotifyResponseToTrack = (track) => ({
 });
 
 const trackParams = {
-  limit: 5, // increase chances of finding the correct track
   locale: 'en-US',
   market: 'NZ',
   type: 'track',
@@ -31,7 +30,7 @@ const trackParams = {
  * @param { string } q
  * @returns { Promise<Record<string, any>> }
  */
-export const searchSpotifyTracks = async (q) => {
+export const searchSpotifyAPI = async (q) => {
   try {
     const { accessToken } = await getSpotifyAccessToken();
     const query = q.toLowerCase().trim();
@@ -71,6 +70,74 @@ export const searchSpotifyTracks = async (q) => {
 }
 
 /**
+ * Calculate a match score between a query and a track
+ * @param { string } query
+ * @param { Record<string, any> } track
+ * @returns { number }
+ */
+const calculateMatchScore = (query, track) => {
+  // Match only for words 3+ characters (to avoid "a", "by", etc.)
+  const MIN_WORD_LENGTH = 3;
+
+  const queryWords = query.toLowerCase().split(/\s+/).filter(word => word.length > 0);
+  const trackTitle = cleanWordsFromTrackName(track.name.toLowerCase());
+
+  // Normalize punctuation: remove dashes and parentheses before splitting
+  const normalizedTitle = trackTitle.replace(/[\-\(\)\[\]]/g, ' ').replace(/\s+/g, ' ');
+  const artistNames = track.artists.map((a) => cleanWordsFromTrackName(a.name.toLowerCase()));
+
+  let score = 0;
+
+  // Score based on title matches
+  const titleWords = normalizedTitle.split(/\s+/).filter(word => word.length > 0);
+  for (const queryWord of queryWords) {
+    if (titleWords.includes(queryWord)) {
+      // Exact word match in title
+      score += 15;
+    } else if (queryWord.length >= MIN_WORD_LENGTH && normalizedTitle.includes(queryWord)) {
+      score += 8;
+    }
+  }
+
+  // Score based on artist matches
+  for (const artist of artistNames) {
+    const artistWords = artist.split(/\s+/).filter(word => word.length > 0);
+    for (const queryWord of queryWords) {
+      if (artistWords.includes(queryWord)) {
+        // Exact word match in artist
+        score += 12;
+        // Substring match only for words of sufficient length
+      } else if (queryWord.length >= MIN_WORD_LENGTH && artist.includes(queryWord)) {
+        score += 6;
+      }
+    }
+  }
+
+  // Bonus for title-artist combo coverage
+  const titleMatch = queryWords.some((word) => 
+    titleWords.includes(word) || (word.length >= MIN_WORD_LENGTH && normalizedTitle.includes(word)),
+  );
+  const artistMatch = queryWords.some((word) => artistNames.some((artist) => {
+    const artistWords = artist.split(/\s+/).filter((w) => w.length > 0);
+    return artistWords.includes(word) || (word.length >= MIN_WORD_LENGTH && artist.includes(word));
+  }));
+  if (titleMatch && artistMatch) {
+    score += 15;
+  }
+
+  // Penalty for extra words in the track title not in the query
+  // This penalizes tracks that have more info than the user provided
+  const extraTitleWords = titleWords.filter((titleWord) => 
+    !queryWords.some((queryWord) => 
+      titleWord === queryWord || (queryWord.length >= MIN_WORD_LENGTH && titleWord.includes(queryWord)),
+    ),
+  );
+  score -= extraTitleWords.length * 8;
+
+  return Math.max(0, score);
+};
+
+/**
  * @param { string | null } q
  * @returns { Promise<ReturnType<typeof spotifyResponseToTrack> | null> }
  */
@@ -80,7 +147,7 @@ export const searchSpotifyTrack = async (q) => {
   }
 
   try {
-    const tracks = await searchSpotifyTracks(q);
+    const tracks = await searchSpotifyAPI(q);
     const query = q.toLowerCase().trim();
 
     if (query.includes(' | ')) {
@@ -100,7 +167,23 @@ export const searchSpotifyTrack = async (q) => {
       return spotifyResponseToTrack(track);
     }
 
-    return spotifyResponseToTrack(tracks[0]) ?? null;
+    // Find the best matching track based on query similarity
+    let bestTrack = null;
+    let bestScore = 0;
+
+    for (const track of tracks) {
+      const score = calculateMatchScore(query, track);
+      if (score > bestScore) {
+        bestScore = score;
+        bestTrack = track;
+      }
+    }
+
+    if (!bestTrack) {
+      throw new Error('No matching track found on Spotify.');
+    }
+
+    return spotifyResponseToTrack(bestTrack);
   } catch (error) {
     throw new Error(error.message || 'An unknown error occurred.');
   }
