@@ -27,7 +27,7 @@ export const getSpotifyPresence = async (user, presence, isSelfAsk = false) => {
   const prefix = isSelfAsk ? '' : `**<@${user.id}>**: `;
 
   if (!currentTrack) {
-    const lastfmHint = `\n**PLEASE HOMIE 🙏🙏 Be a real one and ${prefix ? 'tell them to link their' : 'link your'} account with the \`setlastfm\` command ‼️🙏**`;
+    const lastfmHint = `\n**If ${prefix ? 'they' : 'you'} just send \`,setlastfm\` once and connect ${prefix ? 'their' : 'your'} lastfm account with Frog Bot, it will work 100% of the time ‼️🙏**`;
     return prefix + 'No track currently playing.' + (!isUserSavedAsLastfmUser(user.id) ? lastfmHint : '');
   }
 
