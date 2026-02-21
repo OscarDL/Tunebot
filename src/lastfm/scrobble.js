@@ -3,7 +3,7 @@ import { LASTFM_API_URL } from './utils.js';
 
 /**
  * @param { string } lastfmSessionKey
- * @param { Array<{ title: string; artist: string; album?: string; timestamp: string }> } tracks
+ * @param { Array<{ title: string; artist: string; album?: string; timestamp?: string; date?: { uts: string } }> } tracks
  * @param { number } timestamp = null
  * @param { number } batchSize = 1
  * @returns { Promise<void> }
@@ -12,11 +12,13 @@ export const scrobble = async (
   lastfmSessionKey,
   tracks,
   timestamp = null,
-  batchSize = 1,
+  batchSize,
 ) => {
+  const actualBatchSize = batchSize ?? tracks.length;
+
   try {
-    for (let batchIndex = 0; batchIndex < tracks.length; batchIndex += batchSize) {
-      const batch = tracks.slice(batchIndex, batchIndex + batchSize);
+    for (let batchIndex = 0; batchIndex < tracks.length; batchIndex += actualBatchSize) {
+      const batch = tracks.slice(batchIndex, batchIndex + actualBatchSize);
 
       const scrobbleOptions = {
         method: 'track.scrobble',
@@ -27,7 +29,7 @@ export const scrobble = async (
       batch.forEach((track, index) => {
         scrobbleOptions[`artist[${index}]`] = track.artist['#text'];
         scrobbleOptions[`track[${index}]`] = track.name;
-        scrobbleOptions[`timestamp[${index}]`] = timestamp ?? track.timestamp;
+        scrobbleOptions[`timestamp[${index}]`] = timestamp ?? track.timestamp ?? track.date?.uts;
         if (track.album) {
           scrobbleOptions[`album[${index}]`] = track.album['#text'];
         }
@@ -61,12 +63,12 @@ export const scrobble = async (
 
       console.log(
         scrobbled.scrobbles['@attr'].ignored > 0
-          ? `Some tracks in batch failed to scrobble. Processed ${batchIndex + batchSize} of ${tracks.length} tracks.`
-          : `Successfully scrobbled ${batchIndex + batchSize} of ${tracks.length} tracks.`
+          ? `Some tracks in batch failed to scrobble. Processed ${batchIndex + actualBatchSize} of ${tracks.length} tracks.`
+          : `Successfully scrobbled ${batchIndex + actualBatchSize} of ${tracks.length} tracks.`
       );
 
       // Wait 10 seconds before next batch (except after the last batch)
-      if (batchIndex + batchSize < tracks.length) {
+      if (batchIndex + actualBatchSize < tracks.length) {
         await new Promise((resolve) => setTimeout(resolve, 10000));
       }
     }
