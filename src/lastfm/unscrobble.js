@@ -4,9 +4,10 @@ import limit from 'simple-rate-limiter';
 /**
  * @param { import('./users.json')[number] } user
  * @param { * } track
+ * @param { import('discord.js').Message } [message]
  * @returns { Promise<boolean> }
  */
-export const unscrobble = async (user, track) => {
+export const unscrobble = async (user, track, message) => {
   let limitedRequest = limit(request).to(1).per(1000);
 
   let jar = request.jar();
@@ -19,6 +20,8 @@ export const unscrobble = async (user, track) => {
     return true;
   } catch (error) {
     console.log(error);
+    const errorMessage = String(error).includes('CSRF verification failed') ? 'Last.fm CSRF web token expired' : 'Unknown error';
+    await message.channel.send(`Error unscrobbling ${track.artist['#text']} - ${track.name}: ${errorMessage}`);
     return false;
   }
 };

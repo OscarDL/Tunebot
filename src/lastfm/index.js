@@ -205,7 +205,7 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
             scrobbleTrack.date.uts = scrobbleTimestamp;
 
             await scrobble(user.lastfm.sessionKey, [scrobbleTrack]);
-            await unscrobble(user, track);
+            await unscrobble(user, track, message);
 
             resolve();
           } catch (error) {
