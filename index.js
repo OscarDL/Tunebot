@@ -7,7 +7,7 @@ import { getConvertedTemperature } from './src/convert/temp.js';
 import { fixOpheliaScrobblesForTimePeriod, setLastfmUsername } from './src/lastfm/index.js';
 import users from './src/lastfm/users.json' with { type: 'json' };
 import { fixEmbeddedLink } from './src/linkfix/index.js';
-import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
+// import { checkShouldPingSpamUser, sendSpamUserMessage } from './src/spam/index.js';
 import { handleCommandWithSpotify } from './src/spotify/handler.js';
 import { COMMANDS } from './src/types.js';
 import { repeatTypingDuringCommand } from './src/utils.js';
@@ -59,8 +59,8 @@ client.on('messageCreate', async (message) => {
   if (!isMessageCommand(message)) {
     await addDipCount(message);
     await fixEmbeddedLink(message);
-    await sendSpamUserMessage(message);
-    await checkShouldPingSpamUser(message);
+    // await sendSpamUserMessage(message);
+    // await checkShouldPingSpamUser(message);
     return;
   }
 
