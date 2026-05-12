@@ -54,6 +54,9 @@ export const searchSpotifyAPI = async (q) => {
         fetch(`https://api.spotify.com/v1/search?${params1.toString()}`, {headers}),
         fetch(`https://api.spotify.com/v1/search?${params2.toString()}`, {headers}),
       ]);
+
+      if (!resp1.ok || !resp2.ok) throw new Error('Failed to search Spotify, shitty API might be down.');
+
       const [data1, data2] = await Promise.all([resp1.json(), resp2.json()]);
       return [...data1.tracks.items, ...data2.tracks.items];
     }
