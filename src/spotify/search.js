@@ -26,6 +26,8 @@ const trackParams = {
   type: 'track',
 };
 
+const PRECISE_SEARCH_SEPARATOR = ' | ';
+
 /**
  * @param { string } q
  * @returns { Promise<Record<string, any>> }
@@ -39,8 +41,8 @@ export const searchSpotifyAPI = async (q) => {
       'Authorization': `Bearer ${accessToken}`,
     };
 
-    if (query.includes(' | ')) {
-      const [tOrA, aOrT] = query.split(' | ').map((s) => s.trim().toLowerCase());
+    if (query.includes(PRECISE_SEARCH_SEPARATOR)) {
+      const [tOrA, aOrT] = query.split(PRECISE_SEARCH_SEPARATOR).map((s) => s.trim().toLowerCase());
       const params1 = new URLSearchParams({
         ...trackParams,
         q: `track:"${aOrT}" artist:"${tOrA}"`,
@@ -142,9 +144,10 @@ const calculateMatchScore = (query, track) => {
 
 /**
  * @param { string | null } q
+ * @param { boolean } retryImprecise
  * @returns { Promise<ReturnType<typeof spotifyResponseToTrack> | null> }
  */
-export const searchSpotifyTrack = async (q) => {
+export const searchSpotifyTrack = async (q, retryImprecise = false) => {
   if (!q) {
     throw new Error('No song provided for Spotify track search.');
   }
@@ -153,8 +156,8 @@ export const searchSpotifyTrack = async (q) => {
     const tracks = await searchSpotifyAPI(q);
     const query = q.toLowerCase().trim();
 
-    if (query.includes(' | ')) {
-      const [tOrA, aOrT] = query.split(' | ').map((s) => s.trim().toLowerCase());
+    if (query.includes(PRECISE_SEARCH_SEPARATOR)) {
+      const [tOrA, aOrT] = query.split(PRECISE_SEARCH_SEPARATOR).map((s) => s.trim().toLowerCase());
       const track = tracks.find((item) => {
         const title = cleanWordsFromTrackName(item.name.toLowerCase());
         const artists = item.artists.map((a) => a.name.toLowerCase());
@@ -165,7 +168,11 @@ export const searchSpotifyTrack = async (q) => {
       });
 
       if (!track) {
-        throw new Error('No matching track found on Spotify.');
+        if (!retryImprecise) {
+          throw new Error('No matching track found on Spotify.');
+        }
+        const impreciseQuery = cleanWordsFromTrackName(q.replace(PRECISE_SEARCH_SEPARATOR, ' '));
+        return await searchSpotifyTrack(impreciseQuery);
       }
       return spotifyResponseToTrack(track);
     }

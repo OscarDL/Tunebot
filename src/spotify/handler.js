@@ -57,10 +57,9 @@ export const handleCommandWithSpotify = async (message, command, args) => {
       const {user, presence} = message.member;
 
       if (shouldFallbackToLastfm(user.id, presence)) {
+        const lastfmTrack = await searchLastfmTrack(user.id);
         tracks.push({
-          spotify: await searchSpotifyTrack(
-            await searchLastfmTrack(user.id),
-          ),
+          spotify: await searchSpotifyTrack(lastfmTrack, true),
         });
       } else {
         tracks.push({
@@ -83,9 +82,8 @@ export const handleCommandWithSpotify = async (message, command, args) => {
       for (const {user, presence} of users) {
         const userId = user.id;
         if (shouldFallbackToLastfm(userId, presence)) {
-          const spotify = await searchSpotifyTrack(
-            await searchLastfmTrack(userId),
-          );
+          const lastfmTrack = await searchLastfmTrack(userId);
+          const spotify = await searchSpotifyTrack(lastfmTrack, true);
           tracks.push({ spotify, userId });
         } else {
           tracks.push({
