@@ -171,7 +171,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
           flags: [MessageFlags.SuppressNotifications],
           content: tracksWithAudioFeatures.map((track) => (
             track.features
-              ? `${getTrackMessage(track)} has a BPM of **${Math.round(track.features.tempo)}**.`
+              ? `${getTrackMessage(track)} has a BPM of **${Math.round(track.features.bpm)}**.`
               : `Could not get audio features for ${getEmbeddedTrackLink(track.spotify)}.`
           )).join('\n'),
         });
@@ -184,7 +184,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
           flags: [MessageFlags.SuppressNotifications],
           content: tracksWithAudioFeatures.map((track) => (
             track.features
-              ? `${getTrackMessage(track)} is written in **${getPitchClassNotation(track.features.key)}**.`
+              ? `${getTrackMessage(track)} is written in **${getPitchClassNotation(track.features.key_int)} (${track.features.camelot})**.`
               : `Could not get audio features for ${getEmbeddedTrackLink(track.spotify)}.`
           )).join('\n'),
         });
@@ -197,7 +197,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
           flags: [MessageFlags.SuppressNotifications],
           content: tracksWithAudioFeatures.map((track) => (
             track.features
-              ? `${getTrackMessage(track)} has a BPM of **${Math.round(track.features.tempo)}**, is written in **${getPitchClassNotation(track.features.key)}**, and lasts ${getTrackDuration(track.spotify.duration_ms)}.`
+              ? `${getTrackMessage(track)}\n\- BPM: **${Math.round(track.features.bpm)}**\n\- Key: **${getPitchClassNotation(track.features.key_int)} (${track.features.camelot})**\n\- Duration: ${getTrackDuration(track.features.duration_ms)}\n\- Time signature: **${track.features.time_signature}/4**`
               : `Could not get audio features for ${getEmbeddedTrackLink(track.spotify)}.`
           )).join('\n'),
         });
@@ -214,7 +214,7 @@ export const handleCommandWithSpotify = async (message, command, args) => {
 
 /**
  * @param { import('discord.js').Message } message
- * @param { Array<any> } tracks
+ * @param { Array<unknown> } tracks
  * @param { 'BPM' | 'key' | 'info' } feature 
  * @returns { Promise<Array<{
  *   spotify: Record<string, any>;
@@ -230,12 +230,34 @@ const getTracksWithAudioFeatures = async (message, tracks, feature) => {
   }
 
   const spotifyTracks = await addMissingSpotifyTracksFromPresences(tracks);
-  const audioFeatures = await getSpotifyTrackAudioFeatures(spotifyTracks.map((track) => track.spotify.id));
 
-  for (const index in spotifyTracks) {
-    spotifyTracks[index].features = audioFeatures[index];
+  const features = [];
+  for (const track of spotifyTracks) {
+    const trackFeatures = await getSpotifyTrackAudioFeatures(track.spotify);
+
+    if ('status' in trackFeatures) {
+      if (trackFeatures.outcome === 'accepted') {
+        const reply = await message.reply({
+          flags: [MessageFlags.SuppressNotifications],
+          content: `Analyzing ${getEmbeddedTrackLink(track.spotify)} for the first time.\nA new message will be sent in once the analysis is complete.`,
+        });
+        const retry = trackFeatures.retry_after_seconds ?? 30;
+        await new Promise((resolve) => setTimeout(resolve, (retry + (retry * 1/3)) * 1000));
+        await reply.delete();
+        const newTrackFeatures = await getSpotifyTrackAudioFeatures(track.spotify);
+        features.push(newTrackFeatures);
+      } else {
+        throw new Error(trackFeatures.message || `Could not get audio features for ${getEmbeddedTrackLink(track.spotify)}.`);
+      }
+    } else {
+      features.push(trackFeatures);
+    }
   }
-  return spotifyTracks;
+
+  return spotifyTracks.map((track, index) => ({
+    ...track,
+    features: features[index],
+  }));
 };
 
 /**

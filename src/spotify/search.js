@@ -220,31 +220,60 @@ export const getSpotifyTrack = async (trackId) => {
   }
 };
 
+let lastApiKeyUsed = null;
+
 /**
- * @param { Array<string> } trackIds
- * @returns { Promise<Array<{
- *   id: string;
- *   href: string;
+ * @param { {
+ *   album: string;
+ *   artists: Array<string>;
+ *   title: string;
+ * } } spotifyTrack
+ * @returns { Promise<{
  *   acousticness: number;
+ *   album_name: string;
+ *   artist_name: string;
+ *   bpm: number;
+ *   camelot: string;
  *   danceability: number;
+ *   duration_ms: number;
  *   energy: number;
+ *   genre: string;
+ *   instrumentalness: number;
  *   key: number;
+ *   key_int: number;
  *   liveness: number;
- *   loudness: number;
- *   mode: number;
+ *   loudness_db: number;
+ *   mood: string;
+ *   release_date: string;
  *   speechiness: number;
- *   tempo: number;
+ *   time_signature: number;
+ *   track_name: string;
  *   valence: number;
- * } | null>> }
+ * } | {
+ *   status: string;
+ *   outcome: string;
+ *   message: string;
+ *   retry_after_seconds: number;
+ * }> }
  */
-export const getSpotifyTrackAudioFeatures = async (trackIds) => {
+export const getSpotifyTrackAudioFeatures = async (spotifyTrack) => {
+  const apiKey = lastApiKeyUsed === process.env.FREQBLOG_API_KEY_1
+    ? process.env.FREQBLOG_API_KEY_2
+    : process.env.FREQBLOG_API_KEY_1;
+  lastApiKeyUsed = apiKey;
+
   try {
-    const resp = await fetch(`https://api.reccobeats.com/v1/audio-features?ids=${trackIds.join(',')}`);
+    const resp = await fetch(
+      `https://api.freqblog.com/lookup?track=${spotifyTrack.title}&artist=${spotifyTrack.artists[0]}`,
+      {
+        headers: {
+          'X-Api-Key': apiKey,
+        },
+      },
+    );
 
     if (!resp.ok) throw new Error('Failed to get audio features from Spotify.');
-    const data = await resp.json();
-
-    return trackIds.map((id) => data.content.find((feature) => feature.href.endsWith(id)) ?? null);
+    return await resp.json();
   } catch (error) {
     throw new Error(error.message || 'An unknown error occurred.');
   }

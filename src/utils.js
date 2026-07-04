@@ -12,6 +12,7 @@ export const repeatTypingDuringCommand = async (message, callback) => {
 const MAX_USER_REQUESTS = 3;
 const MAX_SONG_REQUESTS = 10;
 const MAX_COVER_REQUESTS = 1;
+const MAX_INFO_REQUESTS = 1;
 
 /**
  * @param { { title: string; artists: Array<string>; trackId: string } } details
@@ -37,6 +38,14 @@ export const checkMaxRequests = async (message, command, nbRequests, isRequestin
     case 'cover': {
       if (nbRequests > MAX_COVER_REQUESTS) {
         return await message.reply(`Please ask for ${MAX_COVER_REQUESTS} cover${MAX_COVER_REQUESTS > 1 ? 's' : ''} at most.`);
+      }
+      break;
+    }
+    case 'bpm':
+    case 'key':
+    case 'info': {
+      if (nbRequests > MAX_INFO_REQUESTS) {
+        return await message.reply(`Please ask for ${MAX_INFO_REQUESTS} info${MAX_INFO_REQUESTS > 1 ? 's' : ''} at most.`);
       }
       break;
     }

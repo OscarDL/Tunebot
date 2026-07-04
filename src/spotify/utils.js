@@ -71,7 +71,7 @@ export const getPitchClassNotation = (key, mode) => {
 
   switch (key) {
     case 0: return 'C' + minorOrMajor;
-    case 1: return 'D♭' + minorOrMajor;
+    case 1: return 'C♯' + minorOrMajor;
     case 2: return 'D' + minorOrMajor;
     case 3: return 'E♭' + minorOrMajor;
     case 4: return 'E' + minorOrMajor;
