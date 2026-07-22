@@ -220,8 +220,6 @@ export const getSpotifyTrack = async (trackId) => {
   }
 };
 
-let lastApiKeyUsed = null;
-
 /**
  * @param { {
  *   album: string;
@@ -257,17 +255,12 @@ let lastApiKeyUsed = null;
  * }> }
  */
 export const getSpotifyTrackAudioFeatures = async (spotifyTrack) => {
-  const apiKey = lastApiKeyUsed === process.env.FREQBLOG_API_KEY_1
-    ? process.env.FREQBLOG_API_KEY_2
-    : process.env.FREQBLOG_API_KEY_1;
-  lastApiKeyUsed = apiKey;
-
   try {
     const resp = await fetch(
       `https://api.freqblog.com/lookup?track=${spotifyTrack.title}&artist=${spotifyTrack.artists[0]}`,
       {
         headers: {
-          'X-Api-Key': apiKey,
+          'X-Api-Key': process.env.FREQBLOG_API_KEY,
         },
       },
     );
