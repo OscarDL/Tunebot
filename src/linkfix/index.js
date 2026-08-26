@@ -19,30 +19,30 @@ export const fixEmbeddedLink = async (message) => {
 
     const instagramMatch = url.match(/https:\/\/(((www\.)?)instagram\.com)/);
     if (instagramMatch) {
-      reply += `[Link${i}](${url.replace(instagramMatch[0], 'https://kkinstagram.com')})`;
+      reply += `[Embed${i}](${url.replace(instagramMatch[0], 'https://oginstagram.com')})`;
       continue;
     }
 
     const twitterMatch = url.match(/https:\/\/(((www\.)?)(twitter\.com|x\.com))/);
     if (twitterMatch) {
-      reply += `[Link${i}](${url.replace(twitterMatch[0], 'https://fxtwitter.com')})`;
+      reply += `[Embed${i}](${url.replace(twitterMatch[0], 'https://fxtwitter.com')})`;
       continue;
     }
 
     const redditMatch = url.match(/https:\/\/(((www\.)?)(reddit\.com)|redd\.it)/);
     if (redditMatch) {
-      reply += `[Link${i}](${url.replace(redditMatch[0], 'https://vxreddit.com')})`;
+      reply += `[Embed${i}](${url.replace(redditMatch[0], 'https://vxreddit.com')})`;
       continue;
     }
 
     if (url.startsWith('https://preview.redd.it')) {
-      reply += `[Link${i}](${url.replace('https://preview.redd.it', 'https://i.redd.it')})`;
+      reply += `[Embed${i}](${url.replace('https://preview.redd.it', 'https://i.redd.it')})`;
       continue;
     }
 
     const tiktokMatch = url.match(/https:\/\/((((vx\.)?)|((www\.)?))tiktok\.com)/);
     if (tiktokMatch) {
-      reply += `[Link${i}](${url.replace(tiktokMatch[0], 'https://kktiktok.com')})`;
+      reply += `[Embed${i}](${url.replace(tiktokMatch[0], 'https://kktiktok.com')})`;
       continue;
     }
 
