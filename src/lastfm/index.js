@@ -123,6 +123,8 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
       return await message.reply('No scrobbles found for the specified date.');
     }
 
+    const unscrobbles = [];
+    const rescrobbles = [];
     for (const track of tracks) {
       console.log(`\nChecking track: ${track.artist['#text']} - ${track.name}`);
 
@@ -205,7 +207,9 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
             scrobbleTrack.date.uts = scrobbleTimestamp;
 
             await scrobble(user.lastfm.sessionKey, [scrobbleTrack]);
+            rescrobbles.push(scrobbleTrack);
             await unscrobble(user, track, message);
+            unscrobbles.push(track);
 
             resolve();
           } catch (error) {
@@ -216,7 +220,14 @@ export const fixOpheliaScrobblesForTimePeriod = async (message, args) => {
       });
     }
 
-    await message.reply('All scrobbles have been fixed for the specified date.');
+    let messageContent = 'Scrobbles have been fixed for the specified date.'
+    if (unscrobbles.length > 0) {
+      messageContent += '\nUnscrobbles:\n' + unscrobbles.map((track) => `${track.artist['#text']} - ${track.name}`).join('\n');
+    }
+    if (rescrobbles.length > 0) {
+      messageContent += '\nRescrobbles:\n' + rescrobbles.map((track) => `${track.artist['#text']} - ${track.name}`).join('\n');
+    }
+    await message.reply(messageContent);
   } catch (error) {
     console.error('Error fetching scrobbles:', error);
     await message.reply('An error occurred while fetching your scrobbles.');
