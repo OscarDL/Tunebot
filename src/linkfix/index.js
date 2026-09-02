@@ -6,7 +6,7 @@ export const fixEmbeddedLink = async (message) => {
   let reply = '';
 
   // find all instances of a url in the message content
-  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const urlRegex = /((?:!?)https?:\/\/[^\s]+)/g;
   const urls = message.content.match(urlRegex);
   if (!urls) return;
 
@@ -15,6 +15,8 @@ export const fixEmbeddedLink = async (message) => {
   // replace each url with an embedded link
   for (const index in urls) {
     const url = urls[index];
+    if (url.startsWith('!')) continue;
+
     const i = urls.length > 1 ? ' ' + (parseInt(index) + 1) : '';
 
     const instagramMatch = url.match(/https:\/\/(((www\.)?)instagram\.com)/);
