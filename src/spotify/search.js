@@ -35,32 +35,16 @@ const PRECISE_SEARCH_SEPARATOR = ' | ';
 export const searchSpotifyAPI = async (q) => {
   try {
     const { accessToken } = await getSpotifyAccessToken();
-    const query = q.toLowerCase().trim();
+    let query = q.toLowerCase().trim();
 
     const headers = {
       'Authorization': `Bearer ${accessToken}`,
     };
 
     if (query.includes(PRECISE_SEARCH_SEPARATOR)) {
-      const [tOrA, aOrT] = query.split(PRECISE_SEARCH_SEPARATOR).map((s) => s.trim().toLowerCase());
-      const params1 = new URLSearchParams({
-        ...trackParams,
-        q: `track:"${aOrT}" artist:"${tOrA}"`,
-      });
-      const params2 = new URLSearchParams({
-        ...trackParams,
-        q: `track:"${tOrA}" artist:"${aOrT}"`,
-      });
-
-      const [resp1, resp2] = await Promise.all([
-        fetch(`https://api.spotify.com/v1/search?${params1.toString()}`, {headers}),
-        fetch(`https://api.spotify.com/v1/search?${params2.toString()}`, {headers}),
-      ]);
-
-      if (!resp1.ok || !resp2.ok) throw new Error('Failed to search Spotify, shitty API might be down.');
-
-      const [data1, data2] = await Promise.all([resp1.json(), resp2.json()]);
-      return [...data1.tracks.items, ...data2.tracks.items];
+      const [artist, title, album] = query.split(PRECISE_SEARCH_SEPARATOR).map((s) => s.trim().toLowerCase());
+      const albumQuery = album ? `album:"${album}"` : '';
+      query = `track:"${title}" artist:"${artist}" ${albumQuery}`.trim();
     }
 
     const params = new URLSearchParams({ q: query, ...trackParams });
@@ -157,13 +141,15 @@ export const searchSpotifyTrack = async (q, retryImprecise = false) => {
     const query = q.toLowerCase().trim();
 
     if (query.includes(PRECISE_SEARCH_SEPARATOR)) {
-      const [tOrA, aOrT] = query.split(PRECISE_SEARCH_SEPARATOR).map((s) => s.trim().toLowerCase());
+      const [artist, title, album] = query.split(PRECISE_SEARCH_SEPARATOR).map((s) => s.trim().toLowerCase());
       const track = tracks.find((item) => {
-        const title = cleanWordsFromTrackName(item.name.toLowerCase());
+        const cleanTitle = cleanWordsFromTrackName(item.name.toLowerCase());
         const artists = item.artists.map((a) => a.name.toLowerCase());
+        const cleanAlbum = cleanWordsFromTrackName(item.album.name?.toLowerCase() ?? '');
         return (
-          (title === cleanWordsFromTrackName(tOrA) && artists.includes(aOrT)) ||
-          (title === cleanWordsFromTrackName(aOrT) && artists.includes(tOrA))
+          cleanTitle === cleanWordsFromTrackName(title) &&
+          artists.includes(artist) &&
+          (album ? cleanAlbum === cleanWordsFromTrackName(album) : true)
         );
       });
 
