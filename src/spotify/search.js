@@ -35,13 +35,22 @@ const PRECISE_SEARCH_SEPARATOR = ' | ';
 export const searchSpotifyAPI = async (q) => {
   try {
     const { accessToken } = await getSpotifyAccessToken();
+    const trackIdRegex = /^(track):([a-zA-Z0-9]+)$/
+
     let query = q.toLowerCase().trim();
 
     const headers = {
       'Authorization': `Bearer ${accessToken}`,
     };
 
-    if (query.includes(PRECISE_SEARCH_SEPARATOR)) {
+    if (q.match(trackIdRegex)) {
+      const [_, id] = q.split(trackIdRegex).filter(Boolean);
+      const resp = await fetch(`https://api.spotify.com/v1/tracks/${id}`, {headers});
+      if (!resp.ok) throw new Error('Failed to find track on Spotify.');
+      return await resp.json();
+    }
+
+    else if (query.includes(PRECISE_SEARCH_SEPARATOR)) {
       const [artist, title, album] = query.split(PRECISE_SEARCH_SEPARATOR).map((s) => s.trim().toLowerCase());
       const albumQuery = album ? `album:"${album}"` : '';
       query = `track:"${title}" artist:"${artist}" ${albumQuery}`.trim();
@@ -49,7 +58,6 @@ export const searchSpotifyAPI = async (q) => {
 
     const params = new URLSearchParams({ q: query, ...trackParams });
     const resp = await fetch(`https://api.spotify.com/v1/search?${params.toString()}`, {headers});
-
     if (!resp.ok) throw new Error('Failed to search track on Spotify.');
     const data = await resp.json();
     return data.tracks.items;
@@ -137,12 +145,16 @@ export const searchSpotifyTrack = async (q, retryImprecise = false) => {
   }
 
   try {
-    const tracks = await searchSpotifyAPI(q);
+    const trackOrTracks = await searchSpotifyAPI(q);
     const query = q.toLowerCase().trim();
+
+    if (!Array.isArray(trackOrTracks)) {
+      return spotifyResponseToTrack(trackOrTracks);
+    }
 
     if (query.includes(PRECISE_SEARCH_SEPARATOR)) {
       const [artist, title, album] = query.split(PRECISE_SEARCH_SEPARATOR).map((s) => s.trim().toLowerCase());
-      const track = tracks.find((item) => {
+      const track = trackOrTracks.find((item) => {
         const cleanTitle = cleanWordsFromTrackName(item.name.toLowerCase());
         const artists = item.artists.map((a) => a.name.toLowerCase());
         const cleanAlbum = cleanWordsFromTrackName(item.album.name?.toLowerCase() ?? '');
@@ -167,7 +179,7 @@ export const searchSpotifyTrack = async (q, retryImprecise = false) => {
     let bestTrack = null;
     let bestScore = 0;
 
-    for (const track of tracks) {
+    for (const track of trackOrTracks) {
       const score = calculateMatchScore(query, track);
       if (score > bestScore) {
         bestScore = score;
@@ -183,7 +195,7 @@ export const searchSpotifyTrack = async (q, retryImprecise = false) => {
   } catch (error) {
     throw new Error(error.message || 'An unknown error occurred.');
   }
-}
+};
 
 /**
  * @param { string } trackId

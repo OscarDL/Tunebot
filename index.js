@@ -64,7 +64,7 @@ client.on('messageCreate', async (message) => {
     return;
   }
 
-  const content = message.content.slice(1).toLowerCase().split(' ');
+  const content = message.content.slice(1).split(' ');
   const [command, ...args] = content;
 
   // vibin dips command
